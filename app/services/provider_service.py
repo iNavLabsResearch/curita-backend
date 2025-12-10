@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
 
-from app.utilities.supabase_client import get_supabase
+from app.data_layer.supabase_client import get_supabase
 from app.services.base import BaseService
 
 
@@ -205,27 +205,24 @@ class ModelProviderService(ProviderService):
     """Service for managing model providers"""
     
     def __init__(self):
-        from app.core.config import get_settings
-        settings = get_settings()
-        super().__init__(settings.MODEL_PROVIDERS_TABLE)
+        from static_memory_cache import StaticMemoryCache
+        super().__init__("providers")
 
 
 class TTSProviderService(ProviderService):
     """Service for managing TTS providers"""
     
     def __init__(self):
-        from app.core.config import get_settings
-        settings = get_settings()
-        super().__init__(settings.TTS_PROVIDERS_TABLE)
+        from static_memory_cache import StaticMemoryCache
+        super().__init__("providers")
 
 
 class TranscriberProviderService(ProviderService):
     """Service for managing transcriber providers"""
     
     def __init__(self):
-        from app.core.config import get_settings
-        settings = get_settings()
-        super().__init__(settings.TRANSCRIBER_PROVIDERS_TABLE)
+        from static_memory_cache import StaticMemoryCache
+        super().__init__("providers")
 
 
 # Service factory functions

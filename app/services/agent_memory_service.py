@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
 
-from app.utilities.supabase_client import get_supabase
+from app.data_layer.supabase_client import get_supabase
 from app.services.base import BaseService
 from app.services.embedding_service import get_embedding_service
 

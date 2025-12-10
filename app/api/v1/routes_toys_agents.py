@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
 from typing import List, Optional
 
-from app.utilities.logger import get_logger
+from app.telemetries.logger import logger
 from app.models.schemas import (
     ToyCreate, ToyUpdate, ToyResponse,
     AgentCreate, AgentUpdate, AgentResponse,
@@ -16,8 +16,7 @@ from app.services.toy_service import get_toy_service
 from app.services.agent_service import get_agent_service
 from app.services.agent_tools_service import get_agent_tools_service
 
-router = APIRouter(prefix="/api/v1", tags=["toys-agents"])
-logger = get_logger(__name__)
+router = APIRouter()
 
 
 # ============================================================================

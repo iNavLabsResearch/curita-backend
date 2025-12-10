@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from uuid import UUID
 from typing import List, Optional
 
-from app.utilities.logger import get_logger
+from app.telemetries.logger import logger
 from app.models.schemas import (
     MemorySearchRequest,
     MemorySearchResponse,
@@ -23,8 +23,7 @@ from app.services.conversation_service import get_conversation_service
 from app.services.citation_service import get_citation_service
 from app.services.document_processor import get_document_processor
 
-router = APIRouter(prefix="/api/v1", tags=["memory-conversation"])
-logger = get_logger(__name__)
+router = APIRouter(prefix="/memory")
 
 
 # ============================================================================

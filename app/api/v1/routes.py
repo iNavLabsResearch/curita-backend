@@ -6,8 +6,8 @@ from typing import Optional
 import uuid
 import json
 
-from app.core.config import get_settings
-from app.utilities.logger import get_logger
+from static_memory_cache import StaticMemoryCache
+from app.telemetries.logger import logger
 from app.models.schemas import (
     SearchRequest,
     SearchByDocumentRequest,
@@ -25,9 +25,8 @@ from app.services.vector_storage import get_vector_storage_service
 from app.services.search_service import get_search_service
 
 
-settings = get_settings()
-router = APIRouter(prefix="/api/v1", tags=["documents"])
-logger = get_logger(__name__)
+settings = StaticMemoryCache
+router = APIRouter()
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)

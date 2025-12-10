@@ -3,7 +3,7 @@ Vector storage service for Supabase pgvector
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from app.utilities.supabase_client import get_supabase
+from app.data_layer.supabase_client import get_supabase
 from app.services.base import BaseVectorStorage
 
 

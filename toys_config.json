@@ -1,0 +1,37 @@
+{
+  "app_name": "Curita Toy Backend",
+  "version": "1.0.0",
+  "environment": "production",
+  "toys": [
+    {
+      "toy_id": "default-toy-001",
+      "name": "Curita Bear",
+      "toy_type": "voice_toy",
+      "manufacturer": "Curita Inc",
+      "capabilities": ["voice_input", "voice_output", "emotion_detection"],
+      "audio": {
+        "sample_rate": 16000,
+        "channels": 1,
+        "format": "pcm",
+        "codec": "opus"
+      },
+      "voice": {
+        "provider": "openai",
+        "voice_name": "nova",
+        "language": "en-US",
+        "speaking_rate": 1.0
+      },
+      "conversation": {
+        "max_history_length": 50,
+        "enable_memory": true,
+        "enable_citations": true
+      }
+    }
+  ],
+  "features": {
+    "websocket_enabled": true,
+    "memory_enabled": true,
+    "analytics_enabled": true,
+    "metrics_enabled": true
+  }
+}

@@ -3,8 +3,8 @@ Base service classes for dependency injection and common functionality
 """
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Optional, List, Dict, Any
-from app.core.config import get_settings
-from app.utilities.logger import get_logger
+from static_memory_cache import StaticMemoryCache
+from app.telemetries.logger import logger
 
 T = TypeVar('T')
 
@@ -14,7 +14,7 @@ class BaseService(ABC):
     
     def __init__(self):
         self.settings = get_settings()
-        self.logger = get_logger(self.__class__.__module__ + "." + self.__class__.__name__)
+        self.logger = logger
     
     @abstractmethod
     def initialize(self):

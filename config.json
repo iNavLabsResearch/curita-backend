@@ -1,0 +1,49 @@
+{
+  "application": {
+    "app_name": "Curita Backend",
+    "app_version": "1.0.0",
+    "log_level": "INFO",
+    "debug": false,
+    "cors_origins": ["*"]
+  },
+  "general": {
+    "call_session_timeout": 300
+  },
+  "server": {
+    "base_url": "http://localhost:8000"
+  },
+  "models": {
+    "vad_model": {
+      "model_repo": "snakers4/silero-vad",
+      "model_name": "silero_vad"
+    },
+    "embed_model": {
+      "api_base": "",
+      "api_key": "",
+      "model_id": "Snowflake/snowflake-arctic-embed-m",
+      "model_name": "snowflake-arctic-embed"
+    }
+  },
+  "noise_reduction": {
+    "should_use_noise_reduction": false,
+    "rnnoise_reduction_enabled": false,
+    "deep_filter_reduction_enabled": false
+  },
+  "vector_db": {
+    "weaviate_url": "",
+    "weaviate_api_key": ""
+  },
+  "chromadb": {
+    "api_key": "",
+    "tenant": "default_tenant",
+    "database": "default_database",
+    "collection_id": "",
+    "collection_name": "curita_collection",
+    "embedding_dimension": 768
+  },
+  "composio": {
+    "api_key": "",
+    "organization_key": "",
+    "base_url": "https://backend.composio.dev/api/v1"
+  }
+}

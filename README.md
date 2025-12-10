@@ -32,20 +32,30 @@ A comprehensive FastAPI backend for a Talking Toy RAG system with multi-agent ar
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Create Conda Environment
+
+```bash
+# Create conda environment named AI_Env
+conda create -n AI_Env python=3.10 -y
+
+# Activate the environment
+conda activate AI_Env
+```
+
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure Supabase
+### 3. Configure Supabase
 
 1. Create a new project in [Supabase](https://supabase.com)
 2. Run the SQL script in `supabase_schema.sql` in your Supabase SQL Editor
 3. Run the RPC functions script in `supabase_rpc_functions.sql`
 4. Copy your project URL and API key
 
-### 3. Environment Variables
+### 4. Environment Variables
 
 Create a `.env` file in the root directory:
 
@@ -86,6 +96,14 @@ This creates:
 - Example "Curita" toy with Storyteller agent
 
 ### 5. Run the Server
+
+Make sure your conda environment is activated:
+
+```bash
+conda activate AI_Env
+```
+
+Then start the server:
 
 ```bash
 python main.py

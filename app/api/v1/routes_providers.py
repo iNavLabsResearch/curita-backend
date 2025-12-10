@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
 from typing import List
 
-from app.utilities.logger import get_logger
+from app.telemetries.logger import logger
 from app.models.schemas import (
     ModelProviderCreate,
     ModelProviderUpdate,
@@ -24,8 +24,7 @@ from app.services.provider_service import (
     get_transcriber_provider_service
 )
 
-router = APIRouter(prefix="/api/v1/providers", tags=["providers"])
-logger = get_logger(__name__)
+router = APIRouter(prefix="/providers")
 
 
 # ============================================================================

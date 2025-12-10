@@ -1,6 +1,6 @@
 """
 Initialize API package
 """
-from app.api.routes import router
+from app.api.v1.routes import router
 
 __all__ = ["router"]

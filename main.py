@@ -9,54 +9,49 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import get_settings
-from app.api.routes import router as legacy_router
-from app.api.routes_providers import router as providers_router
-from app.api.routes_toys_agents import router as toys_agents_router
-from app.api.routes_memory import router as memory_router
-from app.utilities.logger import LoggerService, get_logger
+from static_memory_cache import StaticMemoryCache
+from app.api.v1 import router as api_v1_router
+from app.telemetries.logger import logger
+from app.telemetries.request_manager import RequestIdManager
 import uvicorn
 import time
 import uuid
-from app.utilities.logger import request_id_ctx_var
 
-# Initialize logging
-LoggerService.setup_logging()
-logger = get_logger(__name__)
-
-# Get settings
-settings = get_settings()
+# Get settings from StaticMemoryCache
+settings = StaticMemoryCache
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
-    logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting up...")
-    logger.info(f"📊 Log level: {settings.LOG_LEVEL}")
-    logger.info(f"🔧 Debug mode: {settings.DEBUG}")
-    logger.info(f"📁 Embedding model: {settings.EMBEDDING_MODEL}")
+    app_config = settings.config.get("application", {})
+    logger.info(f"🚀 {app_config.get('app_name', 'Curita Backend')} v{app_config.get('app_version', '1.0.0')} starting up...")
+    logger.info(f"📊 Log level: {app_config.get('log_level', 'INFO')}")
+    logger.info(f"🔧 Debug mode: {app_config.get('debug', False)}")
+    logger.info(f"📁 Embedding model: {settings.get_embed_model_config().get('model_name', 'snowflake-arctic-embed')}")
+    logger.info(f"🔌 WebSocket support: Enabled")
     logger.info(f"✅ Application startup complete")
     
     yield
     
     # Shutdown
-    logger.info("🛑 Shutting down application...")
     logger.info("👋 Application shutdown complete")
 
 
 # Initialize FastAPI app
+app_config = settings.config.get("application", {})
 app = FastAPI(
-    title=settings.APP_NAME,
-    description="Backend for document processing, embedding generation, and semantic search using Supabase pgvector",
-    version=settings.APP_VERSION,
+    title=app_config.get("app_name", "Curita Backend"),
+    description="Backend for talking toy system with multi-agent architecture, WebSocket support, and RAG capabilities",
+    version=app_config.get("app_version", "1.0.0"),
     lifespan=lifespan
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=app_config.get("cors_origins", ["*"]),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,12 +67,11 @@ async def log_requests(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     
     # Set correlation ID context
-    token = request_id_ctx_var.set(request_id)
+    RequestIdManager.set(request_id)
     
     try:
         # Log request
-        access_logger = get_logger("api.access")
-        access_logger.info(f"Request: {request.method} {request.url.path}")
+        logger.info(f"Request: {request.method} {request.url.path}")
         
         # Process request
         response = await call_next(request)
@@ -87,41 +81,45 @@ async def log_requests(request: Request, call_next):
         
         # Log response
         process_time = time.time() - start_time
-        access_logger.info(
+        logger.info(
             f"Response: {request.method} {request.url.path} - "
             f"Status: {response.status_code} - Time: {process_time:.3f}s"
         )
         
         return response
     finally:
-        # Reset context variable
-        request_id_ctx_var.reset(token)
+        # Clear request ID context
+        RequestIdManager.clear()
 
 # Include API routes
-app.include_router(providers_router)    # Provider management
-app.include_router(toys_agents_router)  # Toys, agents, and tools
-app.include_router(memory_router)       # Memory and conversations
-app.include_router(legacy_router)       # Legacy document routes
+app.include_router(api_v1_router)
 
 
 @app.get("/")
 async def root():
     """Root endpoint"""
+    app_config = settings.config.get("application", {})
     return {
-        "message": f"Welcome to {settings.APP_NAME}",
-        "version": settings.APP_VERSION,
+        "message": f"Welcome to {app_config.get('app_name', 'Curita Backend')}",
+        "version": app_config.get('app_version', '1.0.0'),
         "docs": "/docs",
         "health": "/api/v1/health"
     }
 
 
 if __name__ == "__main__":
-    logger.info(f"Starting server on {settings.HOST}:{settings.PORT}")
+    app_config = settings.config.get("application", {})
+    server_config = settings.config.get("server", {})
+    
+    host = server_config.get("host", "0.0.0.0")
+    port = server_config.get("port", 8000)
+    debug = app_config.get("debug", False)
     
     uvicorn.run(
         "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        reload_dirs=["app"] if settings.DEBUG else None
+        host=host,
+        port=port,
+        reload=debug,
+        reload_dirs=["app"] if debug else None,
+        log_level="warning"  # Reduce uvicorn's default logging
     )

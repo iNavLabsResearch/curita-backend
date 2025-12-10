@@ -2,7 +2,7 @@
 Search service using Supabase RPC functions for vector similarity search
 """
 from typing import List, Dict, Any, Optional
-from app.utilities.supabase_client import get_supabase
+from app.data_layer.supabase_client import get_supabase
 from app.services.embedding_service import get_embedding_service
 from app.services.base import BaseSearchService
 

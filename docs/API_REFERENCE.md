@@ -144,13 +144,21 @@ EMBEDDING_MODEL=Snowflake/snowflake-arctic-embed-m
 EMBEDDING_DIMENSION=768
 ```
 
-### 3. Install Dependencies
+### 3. Create Conda Environment
+
+```bash
+# Create and activate conda environment
+conda create -n AI_Env python=3.10 -y
+conda activate AI_Env
+```
+
+### 4. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Seed Database (Optional)
+### 5. Seed Database (Optional)
 
 ```bash
 python seed_database.py
@@ -163,7 +171,15 @@ This creates:
 - Default transcriber providers (OpenAI Whisper, Google)
 - Example toy and agent
 
-### 5. Run Server
+### 6. Run Server
+
+Make sure your conda environment is activated:
+
+```bash
+conda activate AI_Env
+```
+
+Then start the server:
 
 ```bash
 python main.py
