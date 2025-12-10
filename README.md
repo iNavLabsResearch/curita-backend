@@ -1,17 +1,34 @@
-# Curita Backend - RAG System
+# Curita Backend - Talking Toy RAG System
 
-A FastAPI backend for document processing, embedding generation, and semantic search using Supabase pgvector and Snowflake Arctic Embed models.
+A comprehensive FastAPI backend for a Talking Toy RAG system with multi-agent architecture, provider management, dual memory types, conversation tracking, and vector search capabilities.
 
-## Features
+## 🎯 Features
+
+### Core System
+
+- **Talking Toy Architecture**: Multi-toy system with configurable agents
+- **Multi-Agent Framework**: Each toy can have multiple specialized agents
+- **Provider System**: Pluggable AI providers (model, TTS, transcriber)
+- **Dual Memory System**:
+  - **Toy Memory**: Short-term interaction context (768-dim vectors)
+  - **Agent Memory**: Long-term knowledge base with file storage
+- **Conversation Management**: Role-based message tracking with citations
+- **Vector Search**: Fast similarity search using HNSW indexing and Snowflake Arctic Embed
+
+### Document Processing
 
 - **Document Upload**: Support for PDF, DOCX, and TXT files
 - **Text Extraction**: Automatic text extraction using LangChain loaders
 - **Smart Chunking**: LangChain's RecursiveCharacterTextSplitter with intelligent boundary detection
-- **Local Embeddings**: Snowflake Arctic Embed models running locally
+- **Local Embeddings**: Snowflake Arctic Embed (768 dimensions) running locally
 - **Vector Storage**: Supabase pgvector for efficient vector storage
-- **Semantic Search**: Fast similarity search using RPC functions
-- **CRUD Operations**: Complete document and chunk management
+
+### API & Infrastructure
+
+- **Modular Architecture**: Clean separation of concerns with service layer
+- **41 REST Endpoints**: Complete CRUD operations for all entities
 - **Comprehensive Logging**: Full request/response and operation logging
+- **Database Seeding**: Pre-configured providers and example data
 
 ## Setup
 
@@ -25,7 +42,8 @@ pip install -r requirements.txt
 
 1. Create a new project in [Supabase](https://supabase.com)
 2. Run the SQL script in `supabase_schema.sql` in your Supabase SQL Editor
-3. Copy your project URL and API key
+3. Run the RPC functions script in `supabase_rpc_functions.sql`
+4. Copy your project URL and API key
 
 ### 3. Environment Variables
 
@@ -41,6 +59,10 @@ Update the values:
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_KEY=your_supabase_anon_key
 
+# Embedding Model (768 dimensions)
+EMBEDDING_MODEL=Snowflake/snowflake-arctic-embed-m
+EMBEDDING_DIMENSION=768
+
 # Logging Configuration (optional)
 LOG_LEVEL=INFO
 LOG_FILE_ENABLED=true
@@ -48,7 +70,22 @@ LOG_FILE_MAX_BYTES=10485760
 LOG_FILE_BACKUP_COUNT=5
 ```
 
-### 4. Run the Server
+### 4. Seed Database (Optional)
+
+Populate with default providers and example toy/agent:
+
+```bash
+python seed_database.py
+```
+
+This creates:
+
+- Model providers (OpenAI GPT-4, GPT-3.5, Anthropic Claude)
+- TTS providers (OpenAI, Google, ElevenLabs)
+- Transcriber providers (OpenAI Whisper, Google)
+- Example "Curita" toy with Storyteller agent
+
+### 5. Run the Server
 
 ```bash
 python main.py
@@ -74,72 +111,40 @@ See [LOGGING.md](LOGGING.md) for detailed documentation, configuration options, 
 
 ## API Endpoints
 
-### Upload Document
+### 📚 Full API Documentation
 
-```bash
-POST /api/v1/upload
-- file: Document file (PDF, DOCX, TXT)
-- chunk_size: Size of each chunk (default: 1000)
-- chunk_overlap: Overlap between chunks (default: 200)
-- metadata: Additional metadata (optional JSON string)
-```
+See **[API_REFERENCE.md](API_REFERENCE.md)** for complete endpoint documentation with examples.
 
-### Search Documents
+### Quick Overview (41 Endpoints)
 
-```bash
-POST /api/v1/search
-{
-  "query": "your search query",
-  "top_k": 5,
-  "similarity_threshold": 0.5,
-  "filter_metadata": {}
-}
-```
+#### 🔌 Provider Management (18 endpoints)
 
-### Search by Document ID
+- **Model Providers**: CRUD operations for AI model providers (OpenAI, Anthropic, etc.)
+- **TTS Providers**: Text-to-speech provider management
+- **Transcriber Providers**: Speech-to-text provider management
 
-```bash
-POST /api/v1/search/document
-{
-  "query": "your search query",
-  "document_id": "uuid",
-  "top_k": 5
-}
-```
+#### 🧸 Toy & Agent Management (15 endpoints)
 
-### List Documents
+- **Toys**: Create/read/update/delete toys, activation management
+- **Agents**: Agent lifecycle with provider linking
+- **Agent Tools**: Tool registry with JSON schema support
 
-```bash
-GET /api/v1/documents?limit=100&offset=0
-```
+#### 🧠 Memory & Conversation (8 endpoints)
 
-### Get Document
+- **Memory Search**: Unified search across toy and agent memory
+- **Toy Memory**: Upload/retrieve/delete interaction context
+- **Agent Memory**: Upload/retrieve/delete knowledge base with file storage
+- **Conversations**: Add messages, get history, manage citations
 
-```bash
-GET /api/v1/documents/{document_id}
-```
+#### 📄 Legacy Document Endpoints (backward compatible)
 
-### Delete Document
+- Upload, search, list, get, delete documents
+- Update chunks, health check
 
-```bash
-DELETE /api/v1/documents/{document_id}
-```
+### Interactive API Docs
 
-### Update Chunk
-
-```bash
-PUT /api/v1/chunks/{chunk_id}
-{
-  "chunk_text": "updated text",
-  "metadata": {}
-}
-```
-
-### Health Check
-
-```bash
-GET /api/v1/health
-```
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
 ## Architecture
 
@@ -163,38 +168,88 @@ GET /api/v1/health
 curita-backend/
 ├── app/
 │   ├── core/
-│   │   └── config.py          # Centralized configuration
+│   │   └── config.py                    # Centralized configuration
 │   ├── models/
-│   │   └── schemas.py         # Pydantic request/response models
+│   │   └── schemas.py                   # 30+ Pydantic schemas
 │   ├── api/
-│   │   └── routes.py          # API endpoints
+│   │   ├── routes.py                    # Legacy document endpoints
+│   │   ├── routes_providers.py          # Provider management (18 endpoints)
+│   │   ├── routes_toys_agents.py        # Toy/agent/tool endpoints (15)
+│   │   └── routes_memory.py             # Memory/conversation endpoints (8)
 │   ├── services/
-│   │   ├── base.py            # Base service classes
-│   │   ├── document_processor.py  # LangChain text extraction & chunking
-│   │   ├── embedding_service.py   # Snowflake embeddings
-│   │   ├── vector_storage.py      # Supabase storage
-│   │   └── search_service.py      # Search functionality
+│   │   ├── base.py                      # Base service classes
+│   │   ├── provider_service.py          # Model/TTS/Transcriber providers
+│   │   ├── toy_service.py               # Toy management
+│   │   ├── agent_service.py             # Agent management
+│   │   ├── agent_tools_service.py       # Tool registry
+│   │   ├── toy_memory_service.py        # Toy memory (context)
+│   │   ├── agent_memory_service.py      # Agent memory (knowledge base)
+│   │   ├── conversation_service.py      # Conversation logging
+│   │   ├── citation_service.py          # Message citations
+│   │   ├── unified_memory_search.py     # Cross-memory search
+│   │   ├── document_processor.py        # LangChain text extraction
+│   │   ├── embedding_service.py         # Snowflake embeddings (768-dim)
+│   │   ├── vector_storage.py            # Supabase vector storage
+│   │   └── search_service.py            # Search functionality
 │   └── utilities/
-│       └── supabase_client.py     # Supabase client
-├── main.py                    # FastAPI application
-├── requirements.txt           # Python dependencies
-├── supabase_schema.sql       # Database schema & RPC functions
-├── .env.example              # Environment template
-├── ARCHITECTURE.md           # Detailed architecture guide
-└── README.md                 # Documentation
+│       ├── supabase_client.py           # Supabase client
+│       └── logger.py                    # Logging utilities
+├── main.py                              # FastAPI application
+├── requirements.txt                     # Python dependencies
+├── supabase_schema.sql                  # Database schema (10 tables)
+├── supabase_rpc_functions.sql          # Vector search RPC functions
+├── seed_database.py                     # Database seeding script
+├── .env.example                         # Environment template
+├── API_REFERENCE.md                     # Complete API documentation
+├── ARCHITECTURE.md                      # Detailed architecture guide
+├── LOGGING.md                           # Logging documentation
+└── README.md                            # This file
 ```
 
 ## Architecture
 
 This project uses a **modular, layered architecture** with:
 
-- **Core Layer**: Configuration management
-- **Models Layer**: Pydantic schemas for type-safe data
-- **Services Layer**: Business logic with abstract base classes
-- **API Layer**: RESTful endpoints
+- **Core Layer**: Configuration management with 13 table constants
+- **Models Layer**: 30+ Pydantic schemas for type-safe data
+- **Services Layer**: 10 specialized services with abstract base classes
+- **API Layer**: 4 modular route files with 41 RESTful endpoints
 - **Utilities Layer**: Shared helper functions
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+
+## Database Schema
+
+**10 Main Tables:**
+
+1. `model_providers` - AI model providers (GPT-4, Claude, etc.)
+2. `tts_providers` - Text-to-speech providers
+3. `transcriber_providers` - Speech-to-text providers
+4. `toys` - Toy entities (root level)
+5. `agents` - Agents with provider links
+6. `agent_tools` - Tool registry with JSON schemas
+7. `toy_memory` - Interaction context with 768-dim vectors
+8. `agent_memory` - Knowledge base with file storage
+9. `conversation_logs` - Role-based messages
+10. `message_citations` - Links messages to memory sources
+
+**RPC Functions**: 4 vector similarity search functions with HNSW indexing
+
+## Embedding Model
+
+**Snowflake Arctic Embed M** (768 dimensions)teraction context (user preferences, recent interactions)
+
+- **Agent Memory**: Long-term knowledge base (documents, facts) with file storage
+
+**Unified Search**: Search across both memory types with single API call
+
+### Vector Search Flow
+
+1. Convert query text to embedding using Snowflake Arctic Embed (768-dim, locally)
+2. Pass embedding to Supabase RPC function
+3. Perform vector similarity search in pgvector using HNSW indexing
+4. Return ranked results with similarity scores
+   See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 
 ## Snowflake Arctic Embed Model
 

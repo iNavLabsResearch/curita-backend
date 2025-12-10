@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
     
     # Embedding Model
-    EMBEDDING_MODEL: str = "Snowflake/snowflake-arctic-embed-xs"
-    EMBEDDING_DIMENSION: int = 384
+    EMBEDDING_MODEL: str = "Snowflake/snowflake-arctic-embed-m"
+    EMBEDDING_DIMENSION: int = 768
     
     # Document Processing (LangChain)
     DEFAULT_CHUNK_SIZE: int = 1000
@@ -38,7 +38,25 @@ class Settings(BaseSettings):
     DEFAULT_TOP_K: int = 5
     DEFAULT_SIMILARITY_THRESHOLD: float = 0.0
     
-    # Tables
+    # Tables - Provider Tables
+    MODEL_PROVIDERS_TABLE: str = "model_providers"
+    TTS_PROVIDERS_TABLE: str = "tts_providers"
+    TRANSCRIBER_PROVIDERS_TABLE: str = "transcriber_providers"
+    
+    # Tables - Core Tables
+    TOYS_TABLE: str = "toys"
+    AGENTS_TABLE: str = "agents"
+    AGENT_TOOLS_TABLE: str = "agent_tools"
+    
+    # Tables - Memory Tables
+    TOY_MEMORY_TABLE: str = "toy_memory"
+    AGENT_MEMORY_TABLE: str = "agent_memory"
+    
+    # Tables - Conversation Tables
+    CONVERSATION_LOGS_TABLE: str = "conversation_logs"
+    MESSAGE_CITATIONS_TABLE: str = "message_citations"
+    
+    # Tables - Legacy
     DOCUMENTS_TABLE: str = "documents"
     
     # CORS

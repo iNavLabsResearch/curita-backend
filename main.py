@@ -10,7 +10,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
-from app.api.routes import router
+from app.api.routes import router as legacy_router
+from app.api.routes_providers import router as providers_router
+from app.api.routes_toys_agents import router as toys_agents_router
+from app.api.routes_memory import router as memory_router
 from app.utilities.logger import LoggerService, get_logger
 import uvicorn
 import time
@@ -95,7 +98,10 @@ async def log_requests(request: Request, call_next):
         request_id_ctx_var.reset(token)
 
 # Include API routes
-app.include_router(router)
+app.include_router(providers_router)    # Provider management
+app.include_router(toys_agents_router)  # Toys, agents, and tools
+app.include_router(memory_router)       # Memory and conversations
+app.include_router(legacy_router)       # Legacy document routes
 
 
 @app.get("/")
