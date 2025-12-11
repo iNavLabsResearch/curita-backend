@@ -1,7 +1,7 @@
 """
 Toy schemas for toy entities
 """
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -9,11 +9,11 @@ from uuid import UUID
 
 class ToyBase(BaseModel):
     """Base schema for toy"""
-    name: str
-    description: Optional[str] = None
-    avatar_url: Optional[str] = None
-    user_custom_instruction: Optional[str] = None
-    is_active: bool = True
+    name: str = Field(..., description="Name of the toy")
+    description: Optional[str] = Field(None, description="Description of the toy")
+    avatar_url: Optional[str] = Field(None, description="URL to toy avatar image")
+    user_custom_instruction: Optional[str] = Field(None, description="Custom user instructions for the toy")
+    is_active: bool = Field(True, description="Whether the toy is active")
 
 
 class ToyCreate(ToyBase):

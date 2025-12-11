@@ -2,6 +2,10 @@
 Curita Backend - RAG System with Supabase and pgvector
 """
 import os
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'

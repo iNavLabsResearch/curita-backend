@@ -37,10 +37,10 @@ class ConversationLogResponse(ConversationLogBase):
 
 class MessageCitationBase(BaseModel):
     """Base schema for message citation"""
-    log_id: UUID
-    toy_memory_id: Optional[UUID] = None
-    agent_memory_id: Optional[UUID] = None
-    similarity_score: Optional[float] = None
+    log_id: UUID = Field(..., description="UUID of the conversation log")
+    toy_memory_id: Optional[UUID] = Field(None, description="UUID of toy memory (if citation is from toy memory)")
+    agent_memory_id: Optional[UUID] = Field(None, description="UUID of agent memory (if citation is from agent memory)")
+    similarity_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Similarity score (0-1)")
 
 
 class MessageCitationCreate(MessageCitationBase):

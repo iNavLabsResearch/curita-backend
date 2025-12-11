@@ -1,215 +1,145 @@
--- =================================================================================
--- TALKING TOY RAG SYSTEM
--- =================================================================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- 1. EXTENSIONS
--- =================================================================================
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- =================================================================================
--- 2. PROVIDER TABLES
--- =================================================================================
-
--- 2.1 Model Providers
-CREATE TABLE IF NOT EXISTS public.model_providers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    provider_name TEXT NOT NULL,
-    model_name TEXT NOT NULL,
-    is_large_model BOOLEAN DEFAULT FALSE,
-    default_temperature FLOAT4 DEFAULT 0.7,
-    supported_languages JSONB DEFAULT '["en"]',
-    api_key_template TEXT,
-    api_base TEXT,
-    api_key TEXT,
-    is_default BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.agent_memory (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  toy_id uuid NOT NULL,
+  agent_id uuid NOT NULL,
+  original_filename text,
+  storage_file_id text,
+  file_size bigint,
+  content_type text,
+  chunk_text text,
+  chunk_index integer,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  embedding_vector USER-DEFINED,
+  CONSTRAINT agent_memory_pkey PRIMARY KEY (id),
+  CONSTRAINT agent_memory_toy_id_fkey FOREIGN KEY (toy_id) REFERENCES public.toys(id),
+  CONSTRAINT agent_memory_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
 );
-
--- 2.2 TTS Providers
-CREATE TABLE IF NOT EXISTS public.tts_providers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    provider_name TEXT NOT NULL,
-    model_name TEXT NOT NULL,
-    supported_languages JSONB DEFAULT '["en"]',
-    requires_api_key BOOLEAN DEFAULT TRUE,
-    default_endpoint TEXT,
-    api_key_template TEXT,
-    api_key TEXT,
-    is_default BOOLEAN DEFAULT FALSE,
-    default_voice TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.agent_tools (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  toy_id uuid NOT NULL,
+  name text NOT NULL,
+  url text NOT NULL,
+  headers_schema jsonb DEFAULT '{}'::jsonb,
+  payload_schema jsonb,
+  tool_schema jsonb NOT NULL,
+  http_method text DEFAULT 'POST'::text,
+  provider_name text,
+  output_schema jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT agent_tools_pkey PRIMARY KEY (id),
+  CONSTRAINT agent_tools_toy_id_fkey FOREIGN KEY (toy_id) REFERENCES public.toys(id)
 );
-
--- 2.3 Transcriber Providers
-CREATE TABLE IF NOT EXISTS public.transcriber_providers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT,
-    provider_name TEXT NOT NULL,
-    model_name TEXT NOT NULL,
-    supported_languages JSONB DEFAULT '["en"]',
-    requires_api_key BOOLEAN DEFAULT TRUE,
-    default_endpoint TEXT,
-    api_key_template TEXT,
-    model_size TEXT,
-    is_default BOOLEAN DEFAULT FALSE,
-    api_key TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.agents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  toy_id uuid NOT NULL,
+  name text NOT NULL,
+  system_prompt text NOT NULL,
+  model_provider_id uuid,
+  tts_provider_id uuid,
+  transcriber_provider_id uuid,
+  voice_id text,
+  language_code text DEFAULT 'en-US'::text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT agents_pkey PRIMARY KEY (id),
+  CONSTRAINT agents_toy_id_fkey FOREIGN KEY (toy_id) REFERENCES public.toys(id),
+  CONSTRAINT agents_model_provider_id_fkey FOREIGN KEY (model_provider_id) REFERENCES public.model_providers(id),
+  CONSTRAINT agents_tts_provider_id_fkey FOREIGN KEY (tts_provider_id) REFERENCES public.tts_providers(id),
+  CONSTRAINT agents_transcriber_provider_id_fkey FOREIGN KEY (transcriber_provider_id) REFERENCES public.transcriber_providers(id)
 );
-
--- =================================================================================
--- 3. THE TOY (Root Entity)
--- =================================================================================
-
-CREATE TABLE IF NOT EXISTS public.toys (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    description TEXT,
-    avatar_url TEXT,
-    user_custom_instruction TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.conversation_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  agent_id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['user'::text, 'assistant'::text, 'system'::text, 'tool'::text])),
+  content text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT conversation_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT conversation_logs_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id)
 );
-
--- =================================================================================
--- 4. AGENTS & TOOLS
--- =================================================================================
-
-CREATE TABLE IF NOT EXISTS public.agents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    toy_id UUID NOT NULL REFERENCES public.toys(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    system_prompt TEXT NOT NULL,
-    
-    -- Provider Links
-    model_provider_id UUID REFERENCES public.model_providers(id),
-    tts_provider_id UUID REFERENCES public.tts_providers(id),
-    transcriber_provider_id UUID REFERENCES public.transcriber_providers(id),
-    
-    voice_id TEXT,
-    language_code TEXT DEFAULT 'en-US',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.message_citations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  log_id uuid NOT NULL,
+  toy_memory_id uuid,
+  agent_memory_id uuid,
+  similarity_score real,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT message_citations_pkey PRIMARY KEY (id),
+  CONSTRAINT message_citations_log_id_fkey FOREIGN KEY (log_id) REFERENCES public.conversation_logs(id),
+  CONSTRAINT message_citations_toy_memory_id_fkey FOREIGN KEY (toy_memory_id) REFERENCES public.toy_memory(id),
+  CONSTRAINT message_citations_agent_memory_id_fkey FOREIGN KEY (agent_memory_id) REFERENCES public.agent_memory(id)
 );
-
-CREATE TABLE IF NOT EXISTS public.agent_tools (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    toy_id UUID NOT NULL REFERENCES public.toys(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    url TEXT NOT NULL,
-    headers_schema JSONB DEFAULT '{}',
-    payload_schema JSONB,
-    tool_schema JSONB NOT NULL,
-    http_method TEXT DEFAULT 'POST',
-    provider_name TEXT,
-    output_schema JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.model_providers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provider_name text NOT NULL,
+  model_name text NOT NULL,
+  is_large_model boolean DEFAULT false,
+  default_temperature real DEFAULT 0.7,
+  supported_languages jsonb DEFAULT '["en"]'::jsonb,
+  api_key_template text,
+  api_base text,
+  api_key text,
+  is_default boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT model_providers_pkey PRIMARY KEY (id)
 );
-
--- =================================================================================
--- 5. MEMORY TABLES
--- =================================================================================
-
--- 5.1 Toy Memory (Interaction Context)
-CREATE TABLE IF NOT EXISTS public.toy_memory (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    toy_id UUID NOT NULL REFERENCES public.toys(id) ON DELETE CASCADE,
-    content_type TEXT,
-    chunk_text TEXT, -- The text content for context
-    embedding_vector vector(768),
-    chunk_index INT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.toy_memory (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  toy_id uuid NOT NULL,
+  content_type text,
+  chunk_text text,
+  chunk_index integer,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  embedding_vector USER-DEFINED,
+  CONSTRAINT toy_memory_pkey PRIMARY KEY (id),
+  CONSTRAINT toy_memory_toy_id_fkey FOREIGN KEY (toy_id) REFERENCES public.toys(id)
 );
-
--- Index for vector search
-CREATE INDEX IF NOT EXISTS idx_toy_memory_embedding ON public.toy_memory
-USING hnsw (embedding_vector vector_cosine_ops)
-WITH (m = 16, ef_construction = 64);
-
--- 5.2 Agent Memory (Knowledge Base)
-CREATE TABLE IF NOT EXISTS public.agent_memory (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    toy_id UUID NOT NULL REFERENCES public.toys(id) ON DELETE CASCADE,
-    agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-    original_filename TEXT,
-    storage_file_id TEXT,
-    file_size BIGINT,
-    content_type TEXT,
-    chunk_text TEXT, -- The text content for context
-    embedding_vector vector(768),
-    chunk_index INT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.toys (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  avatar_url text,
+  user_custom_instruction text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT toys_pkey PRIMARY KEY (id)
 );
-
--- Index for vector search
-CREATE INDEX IF NOT EXISTS idx_agent_memory_embedding ON public.agent_memory
-USING hnsw (embedding_vector vector_cosine_ops)
-WITH (m = 16, ef_construction = 64);
-
--- =================================================================================
--- 6. CONVERSATION LOGS
--- =================================================================================
-
-CREATE TABLE IF NOT EXISTS public.conversation_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-    content TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.transcriber_providers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text,
+  provider_name text NOT NULL,
+  model_name text NOT NULL,
+  supported_languages jsonb DEFAULT '["en"]'::jsonb,
+  requires_api_key boolean DEFAULT true,
+  default_endpoint text,
+  api_key_template text,
+  model_size text,
+  is_default boolean DEFAULT false,
+  api_key text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT transcriber_providers_pkey PRIMARY KEY (id)
 );
-
--- =================================================================================
--- 7. MESSAGE CITATIONS (The Context Bridge)
--- =================================================================================
-
-CREATE TABLE IF NOT EXISTS public.message_citations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    log_id UUID NOT NULL REFERENCES public.conversation_logs(id) ON DELETE CASCADE,
-    toy_memory_id UUID REFERENCES public.toy_memory(id) ON DELETE SET NULL,
-    agent_memory_id UUID REFERENCES public.agent_memory(id) ON DELETE SET NULL,
-    similarity_score FLOAT4,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.tts_providers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provider_name text NOT NULL,
+  model_name text NOT NULL,
+  supported_languages jsonb DEFAULT '["en"]'::jsonb,
+  requires_api_key boolean DEFAULT true,
+  default_endpoint text,
+  api_key_template text,
+  api_key text,
+  is_default boolean DEFAULT false,
+  default_voice text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT tts_providers_pkey PRIMARY KEY (id)
 );
-
--- =================================================================================
--- 8. ROW LEVEL SECURITY (RLS)
--- =================================================================================
-
--- Enable RLS on all tables
-ALTER TABLE public.toys ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.agent_tools ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.toy_memory ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.agent_memory ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.conversation_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.message_citations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.model_providers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tts_providers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transcriber_providers ENABLE ROW LEVEL SECURITY;
-
--- Provider Policies (Public Read)
-CREATE POLICY "Public read model providers" ON public.model_providers FOR SELECT USING (true);
-CREATE POLICY "Public read tts providers" ON public.tts_providers FOR SELECT USING (true);
-CREATE POLICY "Public read transcriber providers" ON public.transcriber_providers FOR SELECT USING (true);
-
--- NOTE: Since `user_id` was removed from the `toys` table in your diagram,
--- strict ownership RLS cannot be applied. Below is a placeholder policy that
--- allows access. You will need to add `user_id` back to `toys` if you want
--- private user data.
-
-CREATE POLICY "Allow all access for now" ON public.toys USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access agents" ON public.agents USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access tools" ON public.agent_tools USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access toy_memory" ON public.toy_memory USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access agent_memory" ON public.agent_memory USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access logs" ON public.conversation_logs USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access citations" ON public.message_citations USING (true) WITH CHECK (true);
