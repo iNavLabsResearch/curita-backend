@@ -213,3 +213,59 @@ CREATE POLICY "Allow all access toy_memory" ON public.toy_memory USING (true) WI
 CREATE POLICY "Allow all access agent_memory" ON public.agent_memory USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access logs" ON public.conversation_logs USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access citations" ON public.message_citations USING (true) WITH CHECK (true);
+
+-- =================================================================================
+-- 9. RAG DOCUMENT TABLES (pgvector)
+-- =================================================================================
+
+CREATE TABLE IF NOT EXISTS public.documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    text TEXT NOT NULL,
+    chunk_index INT,
+    source_id TEXT,
+    source_filename TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.doc_embeddings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+    embedding vector(768) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_doc_embeddings_vector
+ON public.doc_embeddings
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+-- =================================================================================
+-- 10. RAG SEARCH RPC
+-- =================================================================================
+CREATE OR REPLACE FUNCTION public.match_documents(
+    query_embedding vector,
+    match_count INT
+)
+RETURNS TABLE (
+    document_id UUID,
+    chunk_text TEXT,
+    chunk_index INT,
+    metadata JSONB,
+    score FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        d.id AS document_id,
+        d.text AS chunk_text,
+        d.chunk_index,
+        d.metadata,
+        1 - (e.embedding <=> query_embedding) AS score
+    FROM public.doc_embeddings e
+    JOIN public.documents d ON d.id = e.document_id
+    ORDER BY e.embedding <=> query_embedding
+    LIMIT match_count;
+END;
+$$;

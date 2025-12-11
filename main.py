@@ -2,15 +2,21 @@
 Curita Backend - RAG System with Supabase and pgvector
 """
 import os
+import warnings
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+# Suppress FutureWarning from transformers
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.routes import router as legacy_router
+from app.api.documents_routes import router as documents_router
+from app.api.rag_routes import router as rag_router
 from app.api.routes_providers import router as providers_router
 from app.api.routes_toys_agents import router as toys_agents_router
 from app.api.routes_memory import router as memory_router
@@ -102,6 +108,8 @@ app.include_router(providers_router)    # Provider management
 app.include_router(toys_agents_router)  # Toys, agents, and tools
 app.include_router(memory_router)       # Memory and conversations
 app.include_router(legacy_router)       # Legacy document routes
+app.include_router(documents_router)    # New RAG document ingestion
+app.include_router(rag_router)          # RAG search
 
 
 @app.get("/")
@@ -118,10 +126,13 @@ async def root():
 if __name__ == "__main__":
     logger.info(f"Starting server on {settings.HOST}:{settings.PORT}")
     
+    # Only reload in development and without watch directories (Windows issue)
+    reload = settings.DEBUG and os.getenv("UVICORN_RELOAD", "false").lower() == "true"
+    
     uvicorn.run(
-        "main:app",
+        app,
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.DEBUG,
-        reload_dirs=["app"] if settings.DEBUG else None
+        reload=reload,
+        reload_dirs=None  # Disable watch dirs to prevent Windows buffer overflow
     )

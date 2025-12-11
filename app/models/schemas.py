@@ -13,11 +13,15 @@ class BaseResponse(BaseModel):
     success: bool
     message: Optional[str] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class PaginationParams(BaseModel):
     """Pagination parameters"""
     limit: int = Field(default=100, ge=1, le=1000)
     offset: int = Field(default=0, ge=0)
+
+    model_config = {"protected_namespaces": ()}
 
 
 # ============================================================================
@@ -35,6 +39,8 @@ class ModelProviderBase(BaseModel):
     api_base: Optional[str] = None
     api_key: Optional[str] = None
     is_default: bool = False
+
+    model_config = {"protected_namespaces": ()}
 
 
 class ModelProviderCreate(ModelProviderBase):
@@ -54,6 +60,8 @@ class ModelProviderUpdate(BaseModel):
     api_key: Optional[str] = None
     is_default: Optional[bool] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ModelProviderResponse(ModelProviderBase):
     """Schema for model provider response"""
@@ -61,7 +69,7 @@ class ModelProviderResponse(ModelProviderBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class TTSProviderBase(BaseModel):
@@ -75,6 +83,8 @@ class TTSProviderBase(BaseModel):
     api_key: Optional[str] = None
     is_default: bool = False
     default_voice: Optional[str] = None
+
+    model_config = {"protected_namespaces": ()}
 
 
 class TTSProviderCreate(TTSProviderBase):
@@ -94,6 +104,8 @@ class TTSProviderUpdate(BaseModel):
     is_default: Optional[bool] = None
     default_voice: Optional[str] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class TTSProviderResponse(TTSProviderBase):
     """Schema for TTS provider response"""
@@ -101,7 +113,7 @@ class TTSProviderResponse(TTSProviderBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class TranscriberProviderBase(BaseModel):
@@ -116,6 +128,8 @@ class TranscriberProviderBase(BaseModel):
     model_size: Optional[str] = None
     is_default: bool = False
     api_key: Optional[str] = None
+
+    model_config = {"protected_namespaces": ()}
 
 
 class TranscriberProviderCreate(TranscriberProviderBase):
@@ -136,6 +150,8 @@ class TranscriberProviderUpdate(BaseModel):
     is_default: Optional[bool] = None
     api_key: Optional[str] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class TranscriberProviderResponse(TranscriberProviderBase):
     """Schema for transcriber provider response"""
@@ -143,7 +159,7 @@ class TranscriberProviderResponse(TranscriberProviderBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -157,6 +173,8 @@ class ToyBase(BaseModel):
     avatar_url: Optional[str] = None
     user_custom_instruction: Optional[str] = None
     is_active: bool = True
+
+    model_config = {"protected_namespaces": ()}
 
 
 class ToyCreate(ToyBase):
@@ -172,6 +190,8 @@ class ToyUpdate(BaseModel):
     user_custom_instruction: Optional[str] = None
     is_active: Optional[bool] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ToyResponse(ToyBase):
     """Schema for toy response"""
@@ -179,7 +199,7 @@ class ToyResponse(ToyBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -198,6 +218,8 @@ class AgentBase(BaseModel):
     language_code: str = "en-US"
     is_active: bool = True
 
+    model_config = {"protected_namespaces": ()}
+
 
 class AgentCreate(AgentBase):
     """Schema for creating agent"""
@@ -215,6 +237,8 @@ class AgentUpdate(BaseModel):
     language_code: Optional[str] = None
     is_active: Optional[bool] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class AgentResponse(AgentBase):
     """Schema for agent response"""
@@ -222,7 +246,7 @@ class AgentResponse(AgentBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -241,6 +265,8 @@ class AgentToolBase(BaseModel):
     provider_name: Optional[str] = None
     output_schema: Optional[Dict[str, Any]] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class AgentToolCreate(AgentToolBase):
     """Schema for creating agent tool"""
@@ -258,6 +284,8 @@ class AgentToolUpdate(BaseModel):
     provider_name: Optional[str] = None
     output_schema: Optional[Dict[str, Any]] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class AgentToolResponse(AgentToolBase):
     """Schema for agent tool response"""
@@ -265,7 +293,7 @@ class AgentToolResponse(AgentToolBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -279,6 +307,8 @@ class ToyMemoryBase(BaseModel):
     chunk_text: str
     chunk_index: Optional[int] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ToyMemoryCreate(ToyMemoryBase):
     """Schema for creating toy memory"""
@@ -291,7 +321,7 @@ class ToyMemoryResponse(ToyMemoryBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class AgentMemoryBase(BaseModel):
@@ -305,6 +335,8 @@ class AgentMemoryBase(BaseModel):
     chunk_text: str
     chunk_index: Optional[int] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class AgentMemoryCreate(AgentMemoryBase):
     """Schema for creating agent memory"""
@@ -317,7 +349,7 @@ class AgentMemoryResponse(AgentMemoryBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -330,6 +362,8 @@ class ConversationLogBase(BaseModel):
     role: str = Field(..., pattern="^(user|assistant|system|tool)$")
     content: Optional[str] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ConversationLogCreate(ConversationLogBase):
     """Schema for creating conversation log"""
@@ -341,7 +375,7 @@ class ConversationLogResponse(ConversationLogBase):
     id: UUID
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class MessageCitationBase(BaseModel):
@@ -350,6 +384,8 @@ class MessageCitationBase(BaseModel):
     toy_memory_id: Optional[UUID] = None
     agent_memory_id: Optional[UUID] = None
     similarity_score: Optional[float] = None
+
+    model_config = {"protected_namespaces": ()}
 
 
 class MessageCitationCreate(MessageCitationBase):
@@ -362,7 +398,7 @@ class MessageCitationResponse(MessageCitationBase):
     id: UUID
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 # ============================================================================
@@ -378,6 +414,8 @@ class MemorySearchRequest(BaseModel):
     toy_id: Optional[UUID] = None
     agent_id: Optional[UUID] = None
 
+    model_config = {"protected_namespaces": ()}
+
 
 class MemorySearchResult(BaseModel):
     """Memory search result item"""
@@ -390,6 +428,8 @@ class MemorySearchResult(BaseModel):
     agent_id: Optional[UUID] = None
     created_at: datetime
 
+    model_config = {"protected_namespaces": ()}
+
 
 class MemorySearchResponse(BaseResponse):
     """Memory search response"""
@@ -397,11 +437,15 @@ class MemorySearchResponse(BaseResponse):
     results: List[MemorySearchResult]
     count: int
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ConversationStartRequest(BaseModel):
     """Request to start a conversation"""
     agent_id: UUID
     initial_message: Optional[str] = None
+
+    model_config = {"protected_namespaces": ()}
 
 
 class SendMessageRequest(BaseModel):
@@ -410,11 +454,15 @@ class SendMessageRequest(BaseModel):
     message: str
     include_citations: bool = True
 
+    model_config = {"protected_namespaces": ()}
+
 
 class MessageWithCitations(BaseModel):
     """Message with its citations"""
     log: ConversationLogResponse
     citations: List[MessageCitationResponse] = []
+
+    model_config = {"protected_namespaces": ()}
 
 
 class ConversationHistoryResponse(BaseResponse):
@@ -422,6 +470,8 @@ class ConversationHistoryResponse(BaseResponse):
     agent_id: UUID
     messages: List[MessageWithCitations]
     count: int
+
+    model_config = {"protected_namespaces": ()}
 
 
 class UploadToMemoryRequest(BaseModel):
@@ -432,6 +482,8 @@ class UploadToMemoryRequest(BaseModel):
     chunk_size: int = Field(default=1000, ge=100, le=4000)
     chunk_overlap: int = Field(default=200, ge=0, le=1000)
 
+    model_config = {"protected_namespaces": ()}
+
 
 class UploadToMemoryResponse(BaseResponse):
     """Response for memory upload"""
@@ -441,6 +493,8 @@ class UploadToMemoryResponse(BaseResponse):
     total_chunks: int
     stored_chunks: int
 
+    model_config = {"protected_namespaces": ()}
+
 
 class ListResponse(BaseResponse):
     """Generic list response"""
@@ -448,6 +502,8 @@ class ListResponse(BaseResponse):
     count: int
     limit: int
     offset: int
+
+    model_config = {"protected_namespaces": ()}
 
 
 # Legacy document schemas (keeping for backward compatibility)
@@ -458,6 +514,10 @@ class DocumentMetadata(BaseModel):
     total_chunks: int
     additional: Optional[Dict[str, Any]] = None
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class ChunkData(BaseModel):
     """Chunk data model"""
@@ -467,6 +527,10 @@ class ChunkData(BaseModel):
     end_position: Optional[int] = None
     chunk_size: Optional[int] = None
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class DocumentUploadResponse(BaseResponse):
     """Response for document upload"""
@@ -474,6 +538,10 @@ class DocumentUploadResponse(BaseResponse):
     filename: str
     total_chunks: int
     stored_chunks: int
+
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
 
 
 # Search schemas
@@ -484,12 +552,20 @@ class SearchRequest(BaseModel):
     similarity_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     filter_metadata: Optional[Dict[str, Any]] = None
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class SearchByDocumentRequest(BaseModel):
     """Search by document request model"""
     query: str = Field(..., min_length=1)
     document_id: str
     top_k: int = Field(default=5, ge=1, le=100)
+
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
 
 
 class SearchResult(BaseModel):
@@ -502,6 +578,10 @@ class SearchResult(BaseModel):
     similarity: float
     created_at: datetime
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class SearchResponse(BaseResponse):
     """Search response model"""
@@ -509,12 +589,20 @@ class SearchResponse(BaseResponse):
     results: List[Dict[str, Any]]
     count: int
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 # CRUD schemas
 class UpdateChunkRequest(BaseModel):
     """Update chunk request model"""
     chunk_text: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
 
 
 class DocumentListResponse(BaseResponse):
@@ -524,6 +612,10 @@ class DocumentListResponse(BaseResponse):
     limit: int
     offset: int
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class DocumentDetailResponse(BaseResponse):
     """Document detail response"""
@@ -531,15 +623,27 @@ class DocumentDetailResponse(BaseResponse):
     chunks: List[Dict[str, Any]]
     total_chunks: int
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class DeleteResponse(BaseResponse):
     """Delete response model"""
     document_id: str
 
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
+
 
 class UpdateChunkResponse(BaseResponse):
     """Update chunk response"""
     chunk: Dict[str, Any]
+
+    model_config = {"protected_namespaces": ()}
+
+    model_config = {"protected_namespaces": ()}
 
 
 
