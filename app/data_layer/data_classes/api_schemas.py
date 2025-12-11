@@ -54,3 +54,37 @@ class BatchTextToMemoryResponse(BaseResponse):
     results: List[TextToMemoryResponse]
     total_processed: int
     total_chunks_stored: int
+
+
+# ============================================================================
+# MEMORY SEARCH API SCHEMAS
+# ============================================================================
+
+
+class MemorySearchResult(BaseModel):
+    """Single memory search result"""
+    id: UUID
+    memory_type: str
+    toy_id: Optional[UUID] = None
+    agent_id: Optional[UUID] = None
+    chunk_text: Optional[str] = None
+    chunk_index: Optional[int] = None
+    similarity: float
+    metadata: Optional[dict] = None
+    created_at: Optional[str] = None
+
+
+class SearchMemoryRequest(BaseModel):
+    """Request to search memory via Supabase RPC"""
+    query_text: str = Field(..., min_length=1, description="User query text")
+    toy_id: Optional[UUID] = Field(default=None, description="Filter by toy")
+    agent_id: Optional[UUID] = Field(default=None, description="Filter by agent")
+    match_count: int = Field(default=5, ge=1, le=50, description="Max results")
+    similarity_threshold: float = Field(default=0.0, ge=0.0, le=1.0, description="Min similarity (0-1)")
+    scope: str = Field(default="all", pattern="^(toy|agent|all)$", description="Search scope")
+
+
+class SearchMemoryResponse(BaseResponse):
+    """Response for memory search"""
+    results: List[MemorySearchResult]
+    total_results: int

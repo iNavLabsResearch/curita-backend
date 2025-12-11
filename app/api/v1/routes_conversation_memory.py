@@ -11,9 +11,13 @@ from app.data_layer.data_classes.api_schemas import (
     TextToMemoryResponse,
     BatchTextToMemoryRequest,
     BatchTextToMemoryResponse,
-    BaseResponse
+    BaseResponse,
+    SearchMemoryRequest,
+    SearchMemoryResponse,
+    MemorySearchResult,
 )
 from app.services.conversation_memory_service import get_conversation_memory_service
+from app.services.memory_search_service import get_memory_search_service
 
 router = APIRouter(tags=["Conversation Memory"])
 
@@ -162,6 +166,64 @@ async def batch_text_to_memory(request: BatchTextToMemoryRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process batch texts: {str(e)}"
+        )
+
+
+@router.post(
+    "/conversation/search-memory",
+    response_model=SearchMemoryResponse,
+    summary="Search memory via Supabase RPC",
+    description="Embed query locally then search memory using Supabase RPC functions."
+)
+async def search_memory(request: SearchMemoryRequest):
+    """
+    Search memory (toy, agent, or unified) using Supabase RPC functions.
+    """
+    logger.info(
+        f"Search memory request: scope={request.scope}, toy_id={request.toy_id}, "
+        f"agent_id={request.agent_id}, match_count={request.match_count}"
+    )
+
+    try:
+        service = get_memory_search_service()
+        results = await service.search_memory(
+            query_text=request.query_text,
+            match_count=request.match_count,
+            similarity_threshold=request.similarity_threshold,
+            toy_id=request.toy_id,
+            agent_id=request.agent_id,
+            scope=request.scope,
+        )
+
+        formatted_results = [
+            MemorySearchResult(
+                id=item.get("id"),
+                memory_type=item.get("memory_type") or ("toy" if request.scope == "toy" else "agent"),
+                toy_id=item.get("toy_id"),
+                agent_id=item.get("agent_id"),
+                chunk_text=item.get("chunk_text"),
+                chunk_index=item.get("chunk_index"),
+                similarity=item.get("similarity"),
+                metadata=item.get("metadata"),
+                created_at=item.get("created_at"),
+            )
+            for item in results
+        ]
+
+        return SearchMemoryResponse(
+            success=True,
+            message=f"Found {len(formatted_results)} results",
+            results=formatted_results,
+            total_results=len(formatted_results),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error searching memory: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search memory: {str(e)}"
         )
 
 
