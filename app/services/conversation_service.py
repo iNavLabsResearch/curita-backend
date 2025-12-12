@@ -5,29 +5,27 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
 
-from app.data_layer.supabase_client import get_supabase
-from app.services.base import BaseService
+from app.services.base import BaseDatabaseService
 
 
-class ConversationService(BaseService):
+class ConversationService(BaseDatabaseService):
     """Service for managing conversation logs"""
     
     VALID_ROLES = {"user", "assistant", "system", "tool"}
     
     def __init__(self):
         """Initialize conversation service"""
-        super().__init__()
-        self.table_name = self.settings.CONVERSATION_LOGS_TABLE
-        self.supabase = None
-        self.initialize()
+        super().__init__(table_name=None)  # Will set in initialize
     
-    def initialize(self):
+    async def initialize(self):
         """Initialize service resources"""
-        self.logger.info(f"Initializing conversation service for table: {self.table_name}")
-        self.supabase = get_supabase()
-        self.logger.info("Conversation service initialized successfully")
+        if self._initialized:
+            return
+        
+        self.table_name = self.settings.CONVERSATION_LOGS_TABLE
+        await super().initialize()
     
-    def add_message(
+    async def add_message(
         self,
         agent_id: UUID,
         role: str,
@@ -47,6 +45,8 @@ class ConversationService(BaseService):
         if role not in self.VALID_ROLES:
             raise ValueError(f"Invalid role: {role}. Must be one of {self.VALID_ROLES}")
         
+        await self.initialize()
+        
         self.logger.info(f"Adding message to conversation: agent={agent_id}, role={role}")
         
         message_data = {
@@ -56,10 +56,10 @@ class ConversationService(BaseService):
             "created_at": datetime.utcnow().isoformat()
         }
         
-        response = self.supabase.table(self.table_name).insert(message_data).execute()
+        response = await self.supabase.insert(self.table_name, message_data)
         
-        self.logger.info(f"Message added to conversation: {response.data[0]['id']}")
-        return response.data[0]
+        self.logger.info(f"Message added to conversation: {response[0]['id']}")
+        return response[0]
     
     def get_by_agent(
         self,

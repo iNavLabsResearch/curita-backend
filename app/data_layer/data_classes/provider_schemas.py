@@ -57,15 +57,15 @@ class ModelProviderResponse(ModelProviderBase):
 
 class TTSProviderBase(BaseModel):
     """Base schema for TTS provider"""
-    provider_name: str
-    model_name: str
-    supported_languages: List[str] = ["en"]
-    requires_api_key: bool = True
-    default_endpoint: Optional[str] = None
-    api_key_template: Optional[str] = None
-    api_key: Optional[str] = None
-    is_default: bool = False
-    default_voice: Optional[str] = None
+    provider_name: str = Field(..., description="Name of the TTS provider")
+    model_name: str = Field(..., description="Model name for TTS")
+    supported_languages: List[str] = Field(default_factory=list, description="List of supported language codes")
+    requires_api_key: bool = Field(False, description="Whether API key is required")
+    default_endpoint: Optional[str] = Field(None, description="Default API endpoint")
+    api_key_template: Optional[str] = Field(None, description="Template for API key environment variable")
+    api_key: Optional[str] = Field(None, description="API key for the provider")
+    is_default: bool = Field(False, description="Whether this is the default TTS provider")
+    default_voice: Optional[str] = Field(None, description="Default voice ID")
 
 
 class TTSProviderCreate(TTSProviderBase):
@@ -101,16 +101,16 @@ class TTSProviderResponse(TTSProviderBase):
 
 class TranscriberProviderBase(BaseModel):
     """Base schema for transcriber provider"""
-    name: Optional[str] = None
-    provider_name: str
-    model_name: str
-    supported_languages: List[str] = ["en"]
-    requires_api_key: bool = True
-    default_endpoint: Optional[str] = None
-    api_key_template: Optional[str] = None
-    model_size: Optional[str] = None
-    is_default: bool = False
-    api_key: Optional[str] = None
+    name: str = Field(..., description="Display name of the transcriber")
+    provider_name: str = Field(..., description="Name of the provider")
+    model_name: str = Field(..., description="Model name for transcription")
+    supported_languages: List[str] = Field(default_factory=list, description="List of supported language codes")
+    requires_api_key: bool = Field(False, description="Whether API key is required")
+    default_endpoint: Optional[str] = Field(None, description="Default API endpoint")
+    api_key_template: Optional[str] = Field(None, description="Template for API key environment variable")
+    model_size: Optional[str] = Field(None, description="Model size (e.g., tiny, base, small, medium, large)")
+    is_default: bool = Field(False, description="Whether this is the default transcriber provider")
+    api_key: Optional[str] = Field(None, description="API key for the provider")
 
 
 class TranscriberProviderCreate(TranscriberProviderBase):

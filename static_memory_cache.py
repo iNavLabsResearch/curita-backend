@@ -32,6 +32,29 @@ class StaticMemoryCache:
         
         cls._initialize_noise_reduction_pipeline()
         cls._initalize_vad_model()
+        
+        # Load database table names from config
+        db_tables = cls.config.get("database_tables", {})
+        cls.TOYS_TABLE = db_tables.get("toys", "toys")
+        cls.AGENTS_TABLE = db_tables.get("agents", "agents")
+        cls.AGENT_TOOLS_TABLE = db_tables.get("agent_tools", "agent_tools")
+        cls.MODEL_PROVIDERS_TABLE = db_tables.get("model_providers", "model_providers")
+        cls.TTS_PROVIDERS_TABLE = db_tables.get("tts_providers", "tts_providers")
+        cls.TRANSCRIBER_PROVIDERS_TABLE = db_tables.get("transcriber_providers", "transcriber_providers")
+        cls.TOY_MEMORY_TABLE = db_tables.get("toy_memory", "toy_memory")
+        cls.AGENT_MEMORY_TABLE = db_tables.get("agent_memory", "agent_memory")
+        cls.CONVERSATION_LOGS_TABLE = db_tables.get("conversation_logs", "conversation_logs")
+        cls.MESSAGE_CITATIONS_TABLE = db_tables.get("message_citations", "message_citations")
+        
+        # Load chunking settings from config
+        chunking_config = cls.config.get("chunking", {})
+        cls.DEFAULT_CHUNK_SIZE = chunking_config.get("default_chunk_size", 1000)
+        cls.DEFAULT_CHUNK_OVERLAP = chunking_config.get("default_chunk_overlap", 200)
+        
+        # Load embedding settings from config
+        embed_config = cls.config.get("models", {}).get("embed_model", {})
+        cls.EMBEDDING_MODEL = embed_config.get("model_id", "Snowflake/snowflake-arctic-embed-xs")
+        cls.EMBEDDING_DIMENSION = cls.config.get("chromadb", {}).get("embedding_dimension", 384)
 
     @classmethod
     def _initialize_noise_reduction_pipeline(cls):

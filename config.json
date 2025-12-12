@@ -20,8 +20,8 @@
     "embed_model": {
       "api_base": "",
       "api_key": "",
-      "model_id": "Snowflake/snowflake-arctic-embed-m",
-      "model_name": "snowflake-arctic-embed"
+      "model_id": "Snowflake/snowflake-arctic-embed-xs",
+      "model_name": "snowflake-arctic-embed-xs"
     }
   },
   "noise_reduction": {
@@ -39,7 +39,23 @@
     "database": "default_database",
     "collection_id": "",
     "collection_name": "curita_collection",
-    "embedding_dimension": 768
+    "embedding_dimension": 384
+  },
+  "database_tables": {
+    "toys": "toys",
+    "agents": "agents",
+    "agent_tools": "agent_tools",
+    "model_providers": "model_providers",
+    "tts_providers": "tts_providers",
+    "transcriber_providers": "transcriber_providers",
+    "toy_memory": "toy_memory",
+    "agent_memory": "agent_memory",
+    "conversation_logs": "conversation_logs",
+    "message_citations": "message_citations"
+  },
+  "chunking": {
+    "default_chunk_size": 1000,
+    "default_chunk_overlap": 200
   },
   "composio": {
     "api_key": "",

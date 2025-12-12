@@ -1,5 +1,6 @@
 """
-Embedding service using Snowflake Arctic Embed model locally
+Embedding service using Snowflake Arctic Embed XS model locally
+Optimized for conversational text with 384-dimensional embeddings
 """
 from sentence_transformers import SentenceTransformer
 from typing import List
@@ -7,7 +8,7 @@ from app.services.base import BaseEmbeddingService
 
 
 class SnowflakeEmbeddingService(BaseEmbeddingService):
-    """Service for generating embeddings using Snowflake Arctic Embed"""
+    """Service for generating embeddings using Snowflake Arctic Embed XS (384-dim)"""
     
     def __init__(self):
         """Initialize the embedding model"""
@@ -18,12 +19,22 @@ class SnowflakeEmbeddingService(BaseEmbeddingService):
     
     def initialize(self):
         """Initialize service resources"""
+        # Using Arctic Embed XS for faster, lighter embeddings (384-dim)
         model_name = self.settings.EMBEDDING_MODEL
         self.logger.info(f"Initializing embedding service with model: {model_name}")
         try:
             self.model = SentenceTransformer(model_name)
             self.embedding_dimension = self.model.get_sentence_embedding_dimension()
-            self.logger.info(f"Embedding service initialized. Dimension: {self.embedding_dimension}")
+            self.logger.info(
+                f"Embedding service initialized. "
+                f"Model: {model_name}, Dimension: {self.embedding_dimension}"
+            )
+            
+            # Verify dimension is 384 for Arctic XS
+            if self.embedding_dimension != 384:
+                self.logger.warning(
+                    f"Expected 384 dimensions for Arctic XS, got {self.embedding_dimension}"
+                )
         except Exception as e:
             self.logger.error(f"Failed to initialize embedding service: {str(e)}")
             raise
