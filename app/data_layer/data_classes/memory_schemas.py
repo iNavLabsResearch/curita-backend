@@ -24,6 +24,14 @@ class ToyMemoryCreate(ToyMemoryBase):
     embedding_vector: Optional[List[float]] = Field(None, description="384-dimensional embedding vector")
 
 
+class ToyMemoryUpdate(BaseModel):
+    """Schema for updating toy memory"""
+    content_type: Optional[str] = None
+    chunk_text: Optional[str] = None
+    chunk_index: Optional[int] = None
+    embedding_vector: Optional[List[float]] = None
+
+
 class ToyMemoryResponse(ToyMemoryBase):
     """Schema for toy memory response"""
     id: UUID
@@ -53,6 +61,17 @@ class AgentMemoryBase(BaseModel):
 class AgentMemoryCreate(AgentMemoryBase):
     """Schema for creating agent memory"""
     embedding_vector: Optional[List[float]] = Field(None, description="384-dimensional embedding vector")
+
+
+class AgentMemoryUpdate(BaseModel):
+    """Schema for updating agent memory"""
+    original_filename: Optional[str] = None
+    storage_file_id: Optional[str] = None
+    file_size: Optional[int] = None
+    content_type: Optional[str] = None
+    chunk_text: Optional[str] = None
+    chunk_index: Optional[int] = None
+    embedding_vector: Optional[List[float]] = None
 
 
 class AgentMemoryResponse(AgentMemoryBase):

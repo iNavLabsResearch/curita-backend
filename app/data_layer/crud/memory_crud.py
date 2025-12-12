@@ -1,250 +1,500 @@
 """
-CRUD operations for Memory (Toy Memory and Agent Memory)
+CRUD operations for Memory entities (Toy Memory and Agent Memory).
+Provides database operations for managing memory storage in the system.
 """
+from typing import Optional, List, Dict, Any
 from uuid import UUID
-from typing import List, Optional
-from app.data_layer.supabase_client import SupabaseClient
-from app.data_layer.crud.base_crud import BaseCrud
+from app.data_layer.crud.base_crud import BaseCRUD
 from app.data_layer.data_classes.memory_schemas import (
+    ToyMemoryCreate,
+    ToyMemoryUpdate,
     ToyMemoryResponse,
-    AgentMemoryResponse,
+    AgentMemoryCreate,
+    AgentMemoryUpdate,
+    AgentMemoryResponse
 )
+from app.data_layer.supabase_client import SupabaseClient
 from app.telemetries.logger import logger
 
 
-class ToyMemoryCRUD(BaseCrud):
-    """CRUD operations for toy_memory table"""
+# ============================================================================
+# TOY MEMORY CRUD
+# ============================================================================
+
+class ToyMemoryCRUD(BaseCRUD[ToyMemoryCreate, ToyMemoryUpdate, ToyMemoryResponse]):
+    """
+    CRUD operations for Toy Memory entities.
     
-    def __init__(self, supabase: SupabaseClient):
-        super().__init__(supabase, "toy_memory", ToyMemoryResponse)
+    Handles all database operations related to toy memory including:
+    - Basic CRUD operations (inherited from BaseCRUD)
+    - Queries by toy_id
+    - Content type filtering
+    - Embedding-based similarity search
+    """
     
-    async def get_memories_by_toy(self, toy_id: UUID) -> List[ToyMemoryResponse]:
+    def __init__(self, supabase_client: Optional[SupabaseClient] = None):
         """
-        Get all memories for a specific toy
+        Initialize ToyMemoryCRUD instance.
+        
+        Args:
+            supabase_client: Optional Supabase client instance
+        """
+        super().__init__(
+            table_name="toy_memory",
+            response_model=ToyMemoryResponse,
+            supabase_client=supabase_client
+        )
+    
+    async def get_by_toy_id(
+        self,
+        toy_id: UUID,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[ToyMemoryResponse]:
+        """
+        Retrieve all memory records for a specific toy.
         
         Args:
             toy_id: UUID of the toy
+            limit: Maximum number of records to return
+            offset: Number of records to skip
             
         Returns:
             List of toy memory records
         """
         try:
-            logger.debug(f"Fetching memories for toy {toy_id}")
-            return await self.filter_by(toy_id=str(toy_id))
+            logger.debug(f"Fetching toy memory for toy_id: {toy_id}")
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters={"toy_id": str(toy_id)},
+                order_by="created_at",
+                order_desc=True
+            )
+            
         except Exception as e:
-            logger.error(f"Error fetching memories for toy {toy_id}: {str(e)}")
-            raise
-    
-    async def get_memories_by_content_type(self, toy_id: UUID, content_type: str) -> List[ToyMemoryResponse]:
-        """
-        Get memories by content type for a specific toy
-        
-        Args:
-            toy_id: UUID of the toy
-            content_type: Type of content
-            
-        Returns:
-            List of toy memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for toy {toy_id} with content type {content_type}")
-            return await self.filter_by(toy_id=str(toy_id), content_type=content_type)
-        except Exception as e:
-            logger.error(f"Error fetching memories by content type: {str(e)}")
-            raise
-    
-    async def get_memories_by_chunk_index(self, toy_id: UUID, chunk_index: int) -> List[ToyMemoryResponse]:
-        """
-        Get memories by chunk index for a specific toy
-        
-        Args:
-            toy_id: UUID of the toy
-            chunk_index: Index of the chunk
-            
-        Returns:
-            List of toy memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for toy {toy_id} with chunk index {chunk_index}")
-            return await self.filter_by(toy_id=str(toy_id), chunk_index=chunk_index)
-        except Exception as e:
-            logger.error(f"Error fetching memories by chunk index: {str(e)}")
-            raise
-    
-    async def vector_search(
-        self, 
-        toy_id: UUID, 
-        embedding_vector: List[float], 
-        limit: int = 5,
-        similarity_threshold: Optional[float] = None
-    ) -> List[dict]:
-        """
-        Perform vector similarity search on toy memory
-        
-        Args:
-            toy_id: UUID of the toy
-            embedding_vector: Vector embedding to search for
-            limit: Maximum number of results
-            similarity_threshold: Minimum similarity score (optional)
-            
-        Returns:
-            List of memory records with similarity scores
-        """
-        try:
-            logger.debug(f"Performing vector search for toy {toy_id}")
-            # Note: This requires pgvector extension and proper setup
-            # The actual implementation depends on Supabase's vector search capabilities
-            query = await self.supabase.table(self.table_name).select("*").eq("toy_id", str(toy_id)).execute()
-            
-            # Vector search would typically use a custom RPC function
-            # For now, we'll return a basic query structure
-            # In production, you'd call an RPC function like:
-            # result = await self.supabase.rpc('search_toy_memory', {
-            #     'toy_id': str(toy_id),
-            #     'query_embedding': embedding_vector,
-            #     'match_threshold': similarity_threshold or 0.5,
-            #     'match_count': limit
-            # }).execute()
-            
-            logger.warning("Vector search not fully implemented. Requires RPC function setup.")
+            logger.error(f"Error fetching toy memory for toy_id {toy_id}: {str(e)}", exc_info=True)
             return []
-        except Exception as e:
-            logger.error(f"Error performing vector search: {str(e)}")
-            raise
-
-
-class AgentMemoryCRUD(BaseCrud):
-    """CRUD operations for agent_memory table"""
     
-    def __init__(self, supabase: SupabaseClient):
-        super().__init__(supabase, "agent_memory", AgentMemoryResponse)
-    
-    async def get_memories_by_agent(self, agent_id: UUID) -> List[AgentMemoryResponse]:
+    async def get_by_content_type(
+        self,
+        content_type: str,
+        toy_id: Optional[UUID] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[ToyMemoryResponse]:
         """
-        Get all memories for a specific agent
+        Retrieve memory records by content type.
         
         Args:
-            agent_id: UUID of the agent
+            content_type: Type of content (e.g., 'conversation', 'document')
+            toy_id: Optional UUID of toy to filter by
+            limit: Maximum number of records to return
+            offset: Number of records to skip
             
         Returns:
-            List of agent memory records
+            List of matching toy memory records
         """
         try:
-            logger.debug(f"Fetching memories for agent {agent_id}")
-            return await self.filter_by(agent_id=str(agent_id))
+            logger.debug(f"Fetching toy memory for content_type: {content_type}")
+            
+            filters = {"content_type": content_type}
+            if toy_id:
+                filters["toy_id"] = str(toy_id)
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters=filters,
+                order_by="created_at",
+                order_desc=True
+            )
+            
         except Exception as e:
-            logger.error(f"Error fetching memories for agent {agent_id}: {str(e)}")
-            raise
-    
-    async def get_memories_by_toy(self, toy_id: UUID) -> List[AgentMemoryResponse]:
-        """
-        Get all memories for a specific toy
-        
-        Args:
-            toy_id: UUID of the toy
-            
-        Returns:
-            List of agent memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for toy {toy_id}")
-            return await self.filter_by(toy_id=str(toy_id))
-        except Exception as e:
-            logger.error(f"Error fetching memories for toy {toy_id}: {str(e)}")
-            raise
-    
-    async def get_memories_by_agent_and_toy(self, agent_id: UUID, toy_id: UUID) -> List[AgentMemoryResponse]:
-        """
-        Get all memories for a specific agent and toy
-        
-        Args:
-            agent_id: UUID of the agent
-            toy_id: UUID of the toy
-            
-        Returns:
-            List of agent memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for agent {agent_id} and toy {toy_id}")
-            return await self.filter_by(agent_id=str(agent_id), toy_id=str(toy_id))
-        except Exception as e:
-            logger.error(f"Error fetching memories for agent and toy: {str(e)}")
-            raise
-    
-    async def get_memories_by_filename(self, agent_id: UUID, filename: str) -> List[AgentMemoryResponse]:
-        """
-        Get memories by original filename
-        
-        Args:
-            agent_id: UUID of the agent
-            filename: Original filename
-            
-        Returns:
-            List of agent memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for agent {agent_id} with filename {filename}")
-            return await self.filter_by(agent_id=str(agent_id), original_filename=filename)
-        except Exception as e:
-            logger.error(f"Error fetching memories by filename: {str(e)}")
-            raise
-    
-    async def get_memories_by_content_type(self, agent_id: UUID, content_type: str) -> List[AgentMemoryResponse]:
-        """
-        Get memories by content type for a specific agent
-        
-        Args:
-            agent_id: UUID of the agent
-            content_type: Type of content
-            
-        Returns:
-            List of agent memory records
-        """
-        try:
-            logger.debug(f"Fetching memories for agent {agent_id} with content type {content_type}")
-            return await self.filter_by(agent_id=str(agent_id), content_type=content_type)
-        except Exception as e:
-            logger.error(f"Error fetching memories by content type: {str(e)}")
-            raise
-    
-    async def vector_search(
-        self, 
-        agent_id: UUID, 
-        embedding_vector: List[float], 
-        limit: int = 5,
-        similarity_threshold: Optional[float] = None
-    ) -> List[dict]:
-        """
-        Perform vector similarity search on agent memory
-        
-        Args:
-            agent_id: UUID of the agent
-            embedding_vector: Vector embedding to search for
-            limit: Maximum number of results
-            similarity_threshold: Minimum similarity score (optional)
-            
-        Returns:
-            List of memory records with similarity scores
-        """
-        try:
-            logger.debug(f"Performing vector search for agent {agent_id}")
-            # Note: This requires pgvector extension and proper setup
-            # The actual implementation depends on Supabase's vector search capabilities
-            query = await self.supabase.table(self.table_name).select("*").eq("agent_id", str(agent_id)).execute()
-            
-            # Vector search would typically use a custom RPC function
-            # For now, we'll return a basic query structure
-            # In production, you'd call an RPC function like:
-            # result = await self.supabase.rpc('search_agent_memory', {
-            #     'agent_id': str(agent_id),
-            #     'query_embedding': embedding_vector,
-            #     'match_threshold': similarity_threshold or 0.5,
-            #     'match_count': limit
-            # }).execute()
-            
-            logger.warning("Vector search not fully implemented. Requires RPC function setup.")
+            logger.error(f"Error fetching toy memory for content_type {content_type}: {str(e)}", exc_info=True)
             return []
+    
+    async def search_by_embedding(
+        self,
+        embedding_vector: List[float],
+        toy_id: Optional[UUID] = None,
+        limit: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for similar memory records using embedding vectors.
+        
+        This method uses PostgreSQL RPC function for vector similarity search.
+        Note: Requires pgvector extension and appropriate RPC function in database.
+        
+        Args:
+            embedding_vector: Query embedding vector (384 dimensions)
+            toy_id: Optional UUID of toy to filter by
+            limit: Maximum number of results to return
+            similarity_threshold: Minimum similarity score (0-1)
+            
+        Returns:
+            List of matching records with similarity scores
+        """
+        try:
+            logger.debug(f"Searching toy memory by embedding (toy_id: {toy_id}, limit: {limit})")
+            
+            # Prepare RPC function parameters
+            params = {
+                "query_embedding": embedding_vector,
+                "match_threshold": similarity_threshold,
+                "match_count": limit
+            }
+            
+            if toy_id:
+                params["filter_toy_id"] = str(toy_id)
+            
+            # Call RPC function for similarity search
+            # Note: This requires a database function like 'search_toy_memory'
+            result = await self.supabase.call_rpc_function(
+                "search_toy_memory",
+                params
+            )
+            
+            if result:
+                logger.info(f"Found {len(result)} similar toy memory records")
+                return result
+            
+            logger.info("No similar toy memory records found")
+            return []
+            
         except Exception as e:
-            logger.error(f"Error performing vector search: {str(e)}")
-            raise
+            logger.error(f"Error searching toy memory by embedding: {str(e)}", exc_info=True)
+            return []
+    
+    async def delete_by_toy_id(self, toy_id: UUID) -> bool:
+        """
+        Delete all memory records for a specific toy.
+        
+        Args:
+            toy_id: UUID of the toy
+            
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            logger.debug(f"Deleting all toy memory for toy_id: {toy_id}")
+            
+            result = await self.supabase.delete(
+                self.table_name,
+                filters={"toy_id": str(toy_id)}
+            )
+            
+            if result:
+                logger.info(f"Successfully deleted toy memory for toy_id: {toy_id}")
+                return True
+            
+            logger.warning(f"Failed to delete toy memory for toy_id: {toy_id}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error deleting toy memory for toy_id {toy_id}: {str(e)}", exc_info=True)
+            return False
 
+
+# ============================================================================
+# AGENT MEMORY CRUD
+# ============================================================================
+
+class AgentMemoryCRUD(BaseCRUD[AgentMemoryCreate, AgentMemoryUpdate, AgentMemoryResponse]):
+    """
+    CRUD operations for Agent Memory entities.
+    
+    Handles all database operations related to agent memory including:
+    - Basic CRUD operations (inherited from BaseCRUD)
+    - Queries by agent_id and toy_id
+    - File-based filtering
+    - Embedding-based similarity search
+    """
+    
+    def __init__(self, supabase_client: Optional[SupabaseClient] = None):
+        """
+        Initialize AgentMemoryCRUD instance.
+        
+        Args:
+            supabase_client: Optional Supabase client instance
+        """
+        super().__init__(
+            table_name="agent_memory",
+            response_model=AgentMemoryResponse,
+            supabase_client=supabase_client
+        )
+    
+    async def get_by_agent_id(
+        self,
+        agent_id: UUID,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[AgentMemoryResponse]:
+        """
+        Retrieve all memory records for a specific agent.
+        
+        Args:
+            agent_id: UUID of the agent
+            limit: Maximum number of records to return
+            offset: Number of records to skip
+            
+        Returns:
+            List of agent memory records
+        """
+        try:
+            logger.debug(f"Fetching agent memory for agent_id: {agent_id}")
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters={"agent_id": str(agent_id)},
+                order_by="created_at",
+                order_desc=True
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching agent memory for agent_id {agent_id}: {str(e)}", exc_info=True)
+            return []
+    
+    async def get_by_toy_id(
+        self,
+        toy_id: UUID,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[AgentMemoryResponse]:
+        """
+        Retrieve all memory records for a specific toy.
+        
+        Args:
+            toy_id: UUID of the toy
+            limit: Maximum number of records to return
+            offset: Number of records to skip
+            
+        Returns:
+            List of agent memory records
+        """
+        try:
+            logger.debug(f"Fetching agent memory for toy_id: {toy_id}")
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters={"toy_id": str(toy_id)},
+                order_by="created_at",
+                order_desc=True
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching agent memory for toy_id {toy_id}: {str(e)}", exc_info=True)
+            return []
+    
+    async def get_by_storage_file_id(
+        self,
+        storage_file_id: str,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[AgentMemoryResponse]:
+        """
+        Retrieve all memory chunks for a specific file.
+        
+        Args:
+            storage_file_id: Storage file identifier
+            limit: Maximum number of records to return
+            offset: Number of records to skip
+            
+        Returns:
+            List of agent memory records for the file
+        """
+        try:
+            logger.debug(f"Fetching agent memory for storage_file_id: {storage_file_id}")
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters={"storage_file_id": storage_file_id},
+                order_by="chunk_index",
+                order_desc=False
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching agent memory for storage_file_id {storage_file_id}: {str(e)}", exc_info=True)
+            return []
+    
+    async def get_by_content_type(
+        self,
+        content_type: str,
+        agent_id: Optional[UUID] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[AgentMemoryResponse]:
+        """
+        Retrieve memory records by content type.
+        
+        Args:
+            content_type: MIME type of content
+            agent_id: Optional UUID of agent to filter by
+            limit: Maximum number of records to return
+            offset: Number of records to skip
+            
+        Returns:
+            List of matching agent memory records
+        """
+        try:
+            logger.debug(f"Fetching agent memory for content_type: {content_type}")
+            
+            filters = {"content_type": content_type}
+            if agent_id:
+                filters["agent_id"] = str(agent_id)
+            
+            return await self.get_all(
+                limit=limit,
+                offset=offset,
+                filters=filters,
+                order_by="created_at",
+                order_desc=True
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching agent memory for content_type {content_type}: {str(e)}", exc_info=True)
+            return []
+    
+    async def search_by_embedding(
+        self,
+        embedding_vector: List[float],
+        agent_id: Optional[UUID] = None,
+        toy_id: Optional[UUID] = None,
+        limit: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for similar memory records using embedding vectors.
+        
+        This method uses PostgreSQL RPC function for vector similarity search.
+        Note: Requires pgvector extension and appropriate RPC function in database.
+        
+        Args:
+            embedding_vector: Query embedding vector (384 dimensions)
+            agent_id: Optional UUID of agent to filter by
+            toy_id: Optional UUID of toy to filter by
+            limit: Maximum number of results to return
+            similarity_threshold: Minimum similarity score (0-1)
+            
+        Returns:
+            List of matching records with similarity scores
+        """
+        try:
+            logger.debug(f"Searching agent memory by embedding (agent_id: {agent_id}, toy_id: {toy_id}, limit: {limit})")
+            
+            # Prepare RPC function parameters
+            params = {
+                "query_embedding": embedding_vector,
+                "match_threshold": similarity_threshold,
+                "match_count": limit
+            }
+            
+            if agent_id:
+                params["filter_agent_id"] = str(agent_id)
+            if toy_id:
+                params["filter_toy_id"] = str(toy_id)
+            
+            # Call RPC function for similarity search
+            # Note: This requires a database function like 'search_agent_memory'
+            result = await self.supabase.call_rpc_function(
+                "search_agent_memory",
+                params
+            )
+            
+            if result:
+                logger.info(f"Found {len(result)} similar agent memory records")
+                return result
+            
+            logger.info("No similar agent memory records found")
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error searching agent memory by embedding: {str(e)}", exc_info=True)
+            return []
+    
+    async def delete_by_agent_id(self, agent_id: UUID) -> bool:
+        """
+        Delete all memory records for a specific agent.
+        
+        Args:
+            agent_id: UUID of the agent
+            
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            logger.debug(f"Deleting all agent memory for agent_id: {agent_id}")
+            
+            result = await self.supabase.delete(
+                self.table_name,
+                filters={"agent_id": str(agent_id)}
+            )
+            
+            if result:
+                logger.info(f"Successfully deleted agent memory for agent_id: {agent_id}")
+                return True
+            
+            logger.warning(f"Failed to delete agent memory for agent_id: {agent_id}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error deleting agent memory for agent_id {agent_id}: {str(e)}", exc_info=True)
+            return False
+    
+    async def delete_by_storage_file_id(self, storage_file_id: str) -> bool:
+        """
+        Delete all memory chunks for a specific file.
+        
+        Args:
+            storage_file_id: Storage file identifier
+            
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            logger.debug(f"Deleting all agent memory for storage_file_id: {storage_file_id}")
+            
+            result = await self.supabase.delete(
+                self.table_name,
+                filters={"storage_file_id": storage_file_id}
+            )
+            
+            if result:
+                logger.info(f"Successfully deleted agent memory for storage_file_id: {storage_file_id}")
+                return True
+            
+            logger.warning(f"Failed to delete agent memory for storage_file_id: {storage_file_id}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error deleting agent memory for storage_file_id {storage_file_id}: {str(e)}", exc_info=True)
+            return False
+
+
+# ============================================================================
+# SINGLETON INSTANCES
+# ============================================================================
+
+_toy_memory_crud_instance: Optional[ToyMemoryCRUD] = None
+_agent_memory_crud_instance: Optional[AgentMemoryCRUD] = None
+
+
+def get_toy_memory_crud() -> ToyMemoryCRUD:
+    """Get or create the singleton ToyMemoryCRUD instance."""
+    global _toy_memory_crud_instance
+    if _toy_memory_crud_instance is None:
+        _toy_memory_crud_instance = ToyMemoryCRUD()
+    return _toy_memory_crud_instance
+
+
+def get_agent_memory_crud() -> AgentMemoryCRUD:
+    """Get or create the singleton AgentMemoryCRUD instance."""
+    global _agent_memory_crud_instance
+    if _agent_memory_crud_instance is None:
+        _agent_memory_crud_instance = AgentMemoryCRUD()
+    return _agent_memory_crud_instance
