@@ -3,19 +3,19 @@ CRUD operations for Toys
 """
 from uuid import UUID
 from typing import List, Dict, Any, Optional
-from supabase import Client
-
+from app.data_layer.supabase_client import SupabaseClient
 from app.data_layer.crud.base_crud import BaseCrud
+from app.data_layer.data_classes.toy_schemas import ToyResponse
 from app.telemetries.logger import logger
 
 
 class ToyCRUD(BaseCrud):
     """CRUD operations for toys table"""
     
-    def __init__(self, supabase_client: Client):
-        super().__init__(supabase_client, "toys")
+    def __init__(self, supabase: SupabaseClient):
+        super().__init__(supabase, "toys", ToyResponse)
     
-    async def get_active_toys(self) -> List[Dict[str, Any]]:
+    async def get_active_toys(self) -> List[ToyResponse]:
         """
         Get all active toys
         
@@ -24,8 +24,7 @@ class ToyCRUD(BaseCrud):
         """
         try:
             logger.debug("Fetching active toys")
-            result = self.supabase.table(self.table_name).select("*").eq("is_active", True).execute()
-            return result.data
+            return await self.filter_by(is_active=True)
         except Exception as e:
             logger.error(f"Error fetching active toys: {str(e)}")
             raise
@@ -42,7 +41,7 @@ class ToyCRUD(BaseCrud):
         """
         try:
             logger.debug(f"Fetching toy {toy_id} with agents")
-            result = self.supabase.table(self.table_name).select(
+            result = await self.supabase.table(self.table_name).select(
                 "*, agents(*)"
             ).eq("id", str(toy_id)).execute()
             return result.data[0] if result.data else None

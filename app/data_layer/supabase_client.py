@@ -1,31 +1,31 @@
-from supabase.client import AsyncClient, acreate_client
+from supabase import create_client, Client
 import os
 from app.telemetries.logger import logger
 from typing import Optional, Dict, Any, List
 
 
 class SupabaseClient:
-    def __init__(self, async_client: AsyncClient):
-        self.async_client = async_client
+    def __init__(self, client: Client):
+        self.client = client
 
     @classmethod
-    async def create(cls, supabase_url: str = None, supabase_key: str = None) -> "SupabaseClient":
+    def create(cls, supabase_url: str = None, supabase_key: str = None) -> "SupabaseClient":
         supabase_url = supabase_url or os.getenv('SUPABASE_URL')
         supabase_key = supabase_key or os.getenv('SUPABASE_KEY')
 
         if not supabase_url or not supabase_key:
             raise ValueError("Supabase URL and Key must be provided")
 
-        async_client: AsyncClient = await acreate_client(supabase_url, supabase_key)
-        return cls(async_client)
+        client: Client = create_client(supabase_url, supabase_key)
+        return cls(client)
 
-    def get_client(self) -> AsyncClient:
-        return self.async_client
+    def get_client(self) -> Client:
+        return self.client
     
     async def insert(self, table_name: str, data: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
         """Insert data into a table."""
         try:
-            result = await self.async_client.table(table_name).insert(data).execute()
+            result = self.client.table(table_name).insert(data).execute()
             return result.data if result.data else None
         except Exception as e:
             logger.error(f"Error inserting into {table_name}: {str(e)}")
@@ -36,7 +36,7 @@ class SupabaseClient:
                     order_by: str = None, order_desc: bool = False) -> Optional[List[Dict[str, Any]]]:
         """Select data from a table."""
         try:
-            query = self.async_client.table(table_name).select("*")
+            query = self.client.table(table_name).select("*")
             
             if filters:
                 for key, value in filters.items():
@@ -54,7 +54,7 @@ class SupabaseClient:
             if offset:
                 query = query.range(offset, offset + (limit or 1000) - 1)
             
-            result = await query.execute()
+            result = query.execute()
             return result.data if result.data else None
         except Exception as e:
             logger.error(f"Error selecting from {table_name}: {str(e)}")
@@ -63,7 +63,7 @@ class SupabaseClient:
     async def update(self, table_name: str, filters: Dict[str, Any], data: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
         """Update data in a table."""
         try:
-            query = self.async_client.table(table_name).select("*")
+            query = self.client.table(table_name).select("*")
             
             for key, value in filters.items():
                 query = query.eq(key, value)
@@ -77,7 +77,7 @@ class SupabaseClient:
     async def delete(self, table_name: str, filters: Dict[str, Any]) -> bool:
         """Delete data from a table."""
         try:
-            query = self.async_client.table(table_name)
+            query = self.client.table(table_name)
             
             for key, value in filters.items():
                 query = query.eq(key, value)
@@ -91,7 +91,7 @@ class SupabaseClient:
     async def upload_file(self, bucket_name: str, file_path: str, file_content: bytes, content_type: str = "application/octet-stream") -> bool:
         """Upload a file to Supabase storage."""
         try:
-            result = await self.async_client.storage.from_(bucket_name).upload(
+            result = self.client.storage.from_(bucket_name).upload(
                 path=file_path,
                 file=file_content,
                 file_options={"content-type": content_type}
@@ -104,7 +104,7 @@ class SupabaseClient:
     async def download_file(self, bucket_name: str, file_path: str) -> Optional[bytes]:
         """Download a file from Supabase storage."""
         try:
-            result = await self.async_client.storage.from_(bucket_name).download(file_path)
+            result = self.client.storage.from_(bucket_name).download(file_path)
             return result
         except Exception as e:
             logger.error(f"Error downloading file from {bucket_name}/{file_path}: {str(e)}")
@@ -113,7 +113,7 @@ class SupabaseClient:
     async def delete_file(self, bucket_name: str, file_path: str) -> bool:
         """Delete a file from Supabase storage."""
         try:
-            result = await self.async_client.storage.from_(bucket_name).remove([file_path])
+            result = self.client.storage.from_(bucket_name).remove([file_path])
             return True
         except Exception as e:
             logger.error(f"Error deleting file from {bucket_name}/{file_path}: {str(e)}")
@@ -133,7 +133,7 @@ class SupabaseClient:
     async def call_rpc_function(self, function_name: str, params: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
         """Call a PostgreSQL RPC function."""
         try:
-            response = await self.async_client.rpc(function_name, params).execute()
+            response = self.client.rpc(function_name, params).execute()
             if response.data:
                 logger.info(f"Successfully called RPC function {function_name}")
                 return response.data
@@ -149,9 +149,9 @@ class SupabaseClient:
 _supabase_client: Optional[SupabaseClient] = None
 
 
-async def get_supabase() -> SupabaseClient:
+def get_supabase() -> SupabaseClient:
     """Get or create the singleton Supabase client instance."""
     global _supabase_client
     if _supabase_client is None:
-        _supabase_client = await SupabaseClient.create()
+        _supabase_client = SupabaseClient.create()
     return _supabase_client

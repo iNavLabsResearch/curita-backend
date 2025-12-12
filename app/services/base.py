@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Optional, List, Dict, Any
 from static_memory_cache import StaticMemoryCache
 from app.telemetries.logger import logger
+from app.core import get_settings
 
 T = TypeVar('T')
 
