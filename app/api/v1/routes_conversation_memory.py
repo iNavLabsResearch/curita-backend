@@ -172,16 +172,17 @@ async def batch_text_to_memory(request: BatchTextToMemoryRequest):
 @router.post(
     "/conversation/search-memory",
     response_model=SearchMemoryResponse,
-    summary="Search memory via Supabase RPC",
-    description="Embed query locally then search memory using Supabase RPC functions."
+    summary="Search memory via Supabase RPC with pagination",
+    description="Embed query locally (with caching) then search memory using Supabase RPC functions with pagination support."
 )
 async def search_memory(request: SearchMemoryRequest):
     """
-    Search memory (toy, agent, or unified) using Supabase RPC functions.
+    Search memory (toy, agent, or unified) using Supabase RPC functions with pagination.
+    Embeddings are cached for frequently searched queries.
     """
     logger.info(
         f"Search memory request: scope={request.scope}, toy_id={request.toy_id}, "
-        f"agent_id={request.agent_id}, match_count={request.match_count}"
+        f"agent_id={request.agent_id}, match_count={request.match_count}, offset={request.offset}"
     )
 
     try:
@@ -189,6 +190,7 @@ async def search_memory(request: SearchMemoryRequest):
         results = await service.search_memory(
             query_text=request.query_text,
             match_count=request.match_count,
+            offset=request.offset,
             similarity_threshold=request.similarity_threshold,
             toy_id=request.toy_id,
             agent_id=request.agent_id,
@@ -210,11 +212,17 @@ async def search_memory(request: SearchMemoryRequest):
             for item in results
         ]
 
+        # Determine if there are more results
+        has_more = len(formatted_results) == request.match_count
+
         return SearchMemoryResponse(
             success=True,
             message=f"Found {len(formatted_results)} results",
             results=formatted_results,
             total_results=len(formatted_results),
+            offset=request.offset,
+            limit=request.match_count,
+            has_more=has_more,
         )
 
     except HTTPException:

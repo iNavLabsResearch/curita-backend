@@ -14,7 +14,8 @@ CREATE OR REPLACE FUNCTION match_toy_memory(
     query_embedding vector(384),
     match_count int DEFAULT 5,
     filter_toy_id uuid DEFAULT NULL,
-    similarity_threshold float DEFAULT 0.0
+    similarity_threshold float DEFAULT 0.0,
+    match_offset int DEFAULT 0
 )
 RETURNS TABLE (
     id uuid,
@@ -43,12 +44,13 @@ BEGIN
         AND tm.embedding_vector IS NOT NULL
         AND (1 - (tm.embedding_vector <=> query_embedding)) >= similarity_threshold
     ORDER BY tm.embedding_vector <=> query_embedding
-    LIMIT match_count;
+    LIMIT match_count
+    OFFSET match_offset;
 END;
 $$;
 
 -- Add comment
-COMMENT ON FUNCTION match_toy_memory IS 'Vector similarity search in toy_memory using 384-dim embeddings (cosine distance)';
+COMMENT ON FUNCTION match_toy_memory IS 'Vector similarity search in toy_memory using 384-dim embeddings (cosine distance) with pagination';
 
 
 -- =================================================================================
@@ -63,7 +65,8 @@ CREATE OR REPLACE FUNCTION match_agent_memory(
     match_count int DEFAULT 5,
     filter_agent_id uuid DEFAULT NULL,
     filter_toy_id uuid DEFAULT NULL,
-    similarity_threshold float DEFAULT 0.0
+    similarity_threshold float DEFAULT 0.0,
+    match_offset int DEFAULT 0
 )
 RETURNS TABLE (
     id uuid,
@@ -99,12 +102,13 @@ BEGIN
         AND am.embedding_vector IS NOT NULL
         AND (1 - (am.embedding_vector <=> query_embedding)) >= similarity_threshold
     ORDER BY am.embedding_vector <=> query_embedding
-    LIMIT match_count;
+    LIMIT match_count
+    OFFSET match_offset;
 END;
 $$;
 
 -- Add comment
-COMMENT ON FUNCTION match_agent_memory IS 'Vector similarity search in agent_memory using 384-dim embeddings (cosine distance)';
+COMMENT ON FUNCTION match_agent_memory IS 'Vector similarity search in agent_memory using 384-dim embeddings (cosine distance) with pagination';
 
 
 -- =================================================================================
@@ -119,7 +123,8 @@ CREATE OR REPLACE FUNCTION match_all_memory(
     match_count int DEFAULT 5,
     filter_toy_id uuid DEFAULT NULL,
     filter_agent_id uuid DEFAULT NULL,
-    similarity_threshold float DEFAULT 0.0
+    similarity_threshold float DEFAULT 0.0,
+    match_offset int DEFAULT 0
 )
 RETURNS TABLE (
     id uuid,
@@ -181,12 +186,13 @@ BEGIN
             AND (1 - (am.embedding_vector <=> query_embedding)) >= similarity_threshold
     )
     ORDER BY similarity DESC
-    LIMIT match_count;
+    LIMIT match_count
+    OFFSET match_offset;
 END;
 $$;
 
 -- Add comment
-COMMENT ON FUNCTION match_all_memory IS 'Unified vector search across toy_memory and agent_memory using 384-dim embeddings';
+COMMENT ON FUNCTION match_all_memory IS 'Unified vector search across toy_memory and agent_memory using 384-dim embeddings with pagination';
 
 
 -- =================================================================================

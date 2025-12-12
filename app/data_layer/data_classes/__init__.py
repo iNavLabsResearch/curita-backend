@@ -72,6 +72,9 @@ from app.data_layer.data_classes.api_schemas import (
     ChunkStatistics,
     BatchTextToMemoryRequest,
     BatchTextToMemoryResponse,
+    SearchMemoryRequest,
+    SearchMemoryResponse,
+    MemorySearchResult,
 )
 
 __all__ = [
@@ -127,5 +130,8 @@ __all__ = [
     "ChunkStatistics",
     "BatchTextToMemoryRequest",
     "BatchTextToMemoryResponse",
+    "SearchMemoryRequest",
+    "SearchMemoryResponse",
+    "MemorySearchResult",
 ]
 

@@ -79,7 +79,8 @@ class SearchMemoryRequest(BaseModel):
     query_text: str = Field(..., min_length=1, description="User query text")
     toy_id: Optional[UUID] = Field(default=None, description="Filter by toy")
     agent_id: Optional[UUID] = Field(default=None, description="Filter by agent")
-    match_count: int = Field(default=5, ge=1, le=50, description="Max results")
+    match_count: int = Field(default=5, ge=1, le=50, description="Max results per page")
+    offset: int = Field(default=0, ge=0, description="Pagination offset")
     similarity_threshold: float = Field(default=0.0, ge=0.0, le=1.0, description="Min similarity (0-1)")
     scope: str = Field(default="all", pattern="^(toy|agent|all)$", description="Search scope")
 
@@ -88,3 +89,6 @@ class SearchMemoryResponse(BaseResponse):
     """Response for memory search"""
     results: List[MemorySearchResult]
     total_results: int
+    offset: int = 0
+    limit: int = 5
+    has_more: bool = False
